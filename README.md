@@ -1,0 +1,1 @@
+Global libraries per Jenkins
