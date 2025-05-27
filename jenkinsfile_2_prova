@@ -1,49 +1,39 @@
-pipeline{
+pipeline {
     agent any
-    parameters{
-        string(
-            name = 'REPO_URL',
-            defaultValue = '',
-            description = 'Which Github repo do you want to analyze?'
-        )
-        string(
-            name = 'BRANCH',
-            defaultValue = 'main',
-            description = 'Which branch?'
-        )
-        string(
-            name = 'SONAR_SERVER',
-            defaultValue = 'sq1',
-            description = "Select the sonar server configured in Jenkins"
-        )
-        string(
-            name = 'PROJECT_KEY',
-            description = 'insert a project key for this project'
-        )
 
+    parameters {
+        string(name: 'REPO_URL', defaultValue: '', description: 'Which GitHub repo do you want to analyze?')
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Which branch?')
+        string(name: 'SONAR_SERVER', defaultValue: 'sq1', description: 'Select the SonarQube server configured in Jenkins')
+        string(name: 'PROJECT_KEY', defaultValue: '', description: 'Insert a project key for this project')
     }
 
     environment { 
-      SONAR_TOKEN = credentials('jenkins-sonar') 
-    } 
+        SONAR_TOKEN = credentials('jenkins-sonar') 
+    }
 
-
-    stages{
-        stage('Checkout'){
-            steps{
-                git branch: BRANCH, url: REPO_URL
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: params.BRANCH, url: params.REPO_URL
             }
         }
 
-        stage('SonarQube Analysis'){
-            steps{
-                withSonarQubeEnv(SONAR_SERVER){
-                                sh """ 
-                                    mvn clean verify sonar:sonar 
-                                    -Dsonar.projectKey=${projectKey} 
-                                    -Dsonar.login=$SONAR_TOKEN 
-                                    """ 
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv(params.SONAR_SERVER) {
+                    sh """
+                        mvn clean verify sonar:sonar \
+                        -Dsonar.projectKey=${params.PROJECT_KEY} \
+                        -Dsonar.login=$SONAR_TOKEN
+                    """
                 }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                waitForQualityGate abortPipeline: true
             }
         }
     }
