@@ -1,4 +1,5 @@
 pipeline{
+    agent any
     parameters{
         string(
             name = 'REPO_URL',
