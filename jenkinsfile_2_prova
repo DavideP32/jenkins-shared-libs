@@ -39,8 +39,8 @@ pipeline{
             steps{
                 withSonarQubeEnv(SONAR_SERVER){
                                 sh """ 
-                                    mvn clean verify sonar:sonar \ 
-                                    -Dsonar.projectKey=${projectKey} \ 
+                                    mvn clean verify sonar:sonar 
+                                    -Dsonar.projectKey=${projectKey} 
                                     -Dsonar.login=$SONAR_TOKEN 
                                     """ 
                 }
