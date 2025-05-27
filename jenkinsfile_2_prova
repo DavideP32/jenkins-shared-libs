@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven3'  // deve corrispondere esattamente al nome definito in Jenkins
+    }
+
+
     parameters {
         string(name: 'REPO_URL', defaultValue: '', description: 'Which GitHub repo do you want to analyze?')
         string(name: 'BRANCH', defaultValue: 'main', description: 'Which branch?')
