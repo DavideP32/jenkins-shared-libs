@@ -27,11 +27,23 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv(params.SONAR_SERVER) {
-                    sh """
-                        mvn clean verify sonar:sonar \
-                        -Dsonar.projectKey=${params.PROJECT_KEY} \
-                        -Dsonar.login=$SONAR_TOKEN
-                    """
+                    script {
+                        // Trova la directory che contiene pom.xml
+                        def pomDir = sh(
+                            script: "find . -name pom.xml | head -n 1 | xargs dirname",
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Trovato pom.xml in: ${pomDir}"
+
+                        dir(pomDir) {
+                            sh """
+                                mvn clean verify sonar:sonar \
+                                -Dsonar.projectKey=${params.PROJECT_KEY} \
+                                -Dsonar.login=$SONAR_TOKEN
+                            """
+                        }
+                    }
                 }
             }
         }
