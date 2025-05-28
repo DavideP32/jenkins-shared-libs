@@ -45,7 +45,10 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sonar (sonarServer: 'sq1', projectKey: params.PROJECT_KEY)
+                    sonar (
+                        sonarServer: 'sq1', 
+                        projectKey: params.PROJECT_KEY
+                    )
                 }
             }
         }
