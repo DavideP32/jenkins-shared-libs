@@ -6,6 +6,8 @@ def call(Map config = [:]) {
         script {
             env.SONAR_SCANNER = tool 'SonarScanner'
             env.SONAR_TOKEN = credentials('jenkins-sonar')
+            echo "Scanner: ${env.SONAR_SCANNER}"
+            echo "Token: ${env.SONAR_TOKEN.take(4)}****"
 
             // Trova pom.xml se presente
             def pomPath = sh(
@@ -29,8 +31,7 @@ def call(Map config = [:]) {
                 }
             } else {
                 echo "Nessun pom.xml trovato. Uso sonar-scanner CLI."
-                echo "Scanner: ${env.SONAR_SCANNER}"
-                echo "Token: ${env.SONAR_TOKEN.take(4)}****"
+                
                 
                 sh "${env.SONAR_SCANNER}/bin/sonar-scanner -Dsonar.projectKey=${projectKey} -Dsonar.sources=. -Dsonar.login=${env.SONAR_TOKEN}"
             }
