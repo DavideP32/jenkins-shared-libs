@@ -45,7 +45,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sonarScan(
+                    sonar(
                         sonarServer: 'sq1',
                         projectKey: params.PROJECT_KEY
                     )
