@@ -14,8 +14,8 @@ pipeline {
         string(name: 'PROJECT_KEY', defaultValue: '', description: 'Insert a project key for this project')
     }
 
-    environment { 
-    }
+    // environment { 
+    // }
 
     stages {
         stage('Checkout') {
