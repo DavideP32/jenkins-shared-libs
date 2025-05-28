@@ -50,7 +50,8 @@ def call(Map config = [:]) {
                 -Dsonar.sources=. \\
                 -Dsonar.exclusions='${defaultExclusions}' \\
                 -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
-                -Dsonar.login='${env.SONAR_AUTH_TOKEN}'
+                -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
+                -Dsonar.java.binaries=.
             """
 
                 //sonar.login deprecato, si usa sonar.token
