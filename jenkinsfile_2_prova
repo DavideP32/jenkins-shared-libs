@@ -46,7 +46,7 @@ pipeline {
             steps {
                 script {
                     sonar(
-                        eecho "DEBUG - SONAR_SCANNER path: ${env.SONAR_SCANNER}"
+                        echo "DEBUG - SONAR_SCANNER path: ${env.SONAR_SCANNER}"
                         echo "DEBUG - PROJECT_KEY: ${projectKey}"
                         sonarServer: 'sq1',
                         projectKey: params.PROJECT_KEY
