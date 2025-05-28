@@ -33,7 +33,7 @@ def call(Map config = [:]) {
             } else {
                 echo "Nessun pom.xml trovato. Uso sonar-scanner CLI."
                 // Usare riga singola per evitare errori di shell
-                sh "${env.SONAR_SCANNER}/bin/sonar-scanner -Dsonar.projectKey=${projectKey} -Dsonar.sources=. -Dsonar.login=${env.SONAR_TOKEN}"
+                sh "sonar-scanner -Dsonar.projectKey=${projectKey} -Dsonar.sources=. -Dsonar.login=${env.SONAR_TOKEN}"
             }
         }
     }
