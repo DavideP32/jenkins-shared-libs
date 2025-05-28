@@ -3,51 +3,29 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven3'
-    }
-
-
     parameters {
         string(name: 'REPO_URL', defaultValue: '', description: 'GitHub repo to scan')
-        string(name: 'BRANCH', defaultValue: 'main', description: 'branch of the repo to scan')
+        string(name: 'BRANCH', defaultValue: 'main', description: 'Branch of the repo to scan')
         string(name: 'PROJECT_KEY', defaultValue: '', description: 'Insert a project key for this project')
+        string(name: 'PROJECT_NAME', defaultValue: '', description: 'Project name (optional, defaults to PROJECT_KEY)')
+        string(name: 'PROJECT_VERSION', defaultValue: '1.0.0', description: 'Project version (optional)')
     }
-
-    // environment { 
-    // }
 
     stages {
         stage('Checkout') {
             steps {
                 git branch: params.BRANCH, url: params.REPO_URL
             }
-            // steps {
-            //     script {
-            //         sh 'rm -rf -- ..?* .[!.]* *'
-            //     }
-            //     checkout([
-            //             $class                           : 'GitSCM',
-            //             branches                         : [[name: env.gitlabBranch]],
-            //             doGenerateSubmoduleConfigurations: false,
-            //             extensions                       : [], --> forse CleanBeforeCheckout
-            //             submoduleCfg                     : [],
-            //             userRemoteConfigs                : [
-            //                     [
-            //                             credentialsId: '0ce2d803-fcc5-4faf-b45f-5fca9f59ffd8',
-            //                             url          : env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
-            //                     ]
-            //             ]
-            //     ])
-            // }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    sonar (
-                        sonarServer: 'sq1', 
-                        projectKey: params.PROJECT_KEY
+                    sonar(
+                        sonarServer: 'sq1',
+                        projectKey: params.PROJECT_KEY,
+                        projectName: params.PROJECT_NAME ?: params.PROJECT_KEY,
+                        projectVersion: params.PROJECT_VERSION
                     )
                 }
             }
@@ -60,3 +38,66 @@ pipeline {
         }
     }
 }
+
+// @Library('my-shared-library') _
+
+// pipeline {
+//     agent any
+
+//     tools {
+//         maven 'Maven3'
+//     }
+
+
+//     parameters {
+//         string(name: 'REPO_URL', defaultValue: '', description: 'GitHub repo to scan')
+//         string(name: 'BRANCH', defaultValue: 'main', description: 'branch of the repo to scan')
+//         string(name: 'PROJECT_KEY', defaultValue: '', description: 'Insert a project key for this project')
+//     }
+
+//     // environment { 
+//     // }
+
+//     stages {
+//         stage('Checkout') {
+//             steps {
+//                 git branch: params.BRANCH, url: params.REPO_URL
+//             }
+//             // steps {
+//             //     script {
+//             //         sh 'rm -rf -- ..?* .[!.]* *'
+//             //     }
+//             //     checkout([
+//             //             $class                           : 'GitSCM',
+//             //             branches                         : [[name: env.gitlabBranch]],
+//             //             doGenerateSubmoduleConfigurations: false,
+//             //             extensions                       : [], --> forse CleanBeforeCheckout
+//             //             submoduleCfg                     : [],
+//             //             userRemoteConfigs                : [
+//             //                     [
+//             //                             credentialsId: '0ce2d803-fcc5-4faf-b45f-5fca9f59ffd8',
+//             //                             url          : env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
+//             //                     ]
+//             //             ]
+//             //     ])
+//             // }
+//         }
+
+//         stage('SonarQube Analysis') {
+//             steps {
+//                 script {
+//                     sonar (
+//                         sonarServer: 'sq1', 
+//                         projectKey: params.PROJECT_KEY
+//                     )
+//                 }
+//             }
+//         }
+
+//         stage('Quality Gate') {
+//             steps {
+//                 waitForQualityGate abortPipeline: true
+//             }
+//         }
+//     }
+// }
