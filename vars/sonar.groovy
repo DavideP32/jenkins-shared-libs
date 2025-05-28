@@ -145,7 +145,7 @@ def call(Map config = [:]) {
             }
         }
     }
-}
+
 // def call(Map config = [:]) {
 //     def sonarServer = config.get('sonarServer', 'sq1')
 //     def projectKey = config.get('projectKey', '')
