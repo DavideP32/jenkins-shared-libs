@@ -6,8 +6,10 @@ def call(Map config = [:]) {
         script {
             env.SONAR_SCANNER = tool 'SonarScanner'
             env.SONAR_TOKEN = credentials('jenkins-sonar')
-            echo "Scanner: ${env.SONAR_SCANNER}"
-            echo "Token: ${env.SONAR_TOKEN.take(4)}****"
+            
+            if (!env.SONAR_SCANNER?.trim()) {
+                error "SonarScanner tool path is empty. Check Jenkins tool configuration."
+            }
 
             // Trova pom.xml se presente
             def pomPath = sh(
