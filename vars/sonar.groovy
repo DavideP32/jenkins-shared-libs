@@ -17,7 +17,7 @@ def call(Map config = [:]) {
             echo "DEBUG - PROJECT_NAME: ${projectName}"
             echo "DEBUG - PROJECT_VERSION: ${projectVersion}"
 
-            // Lista dei file/directory da escludere di default
+            
             def defaultExclusions = [
                 '**/node_modules/**',
                 '**/target/**',
@@ -31,104 +31,103 @@ def call(Map config = [:]) {
                 '**/coverage/**',
                 '**/__pycache__/**',
                 '**/*.pyc',
+                '**/*.min.js',
                 '**/logs/**',
                 '**/.env',
                 '**/.DS_Store',
                 '**/thumbs.db'
             ].join(',')
 
-            // Rileva il tipo di progetto
-            def isMavenProject = fileExists('pom.xml')
-            def isGradleProject = fileExists('build.gradle') || fileExists('build.gradle.kts')
-            def hasJavaFiles = sh(
-                script: "find . -name '*.java' -type f | head -1",
-                returnStdout: true
-            ).trim()
+            // type of project detection
+            // def isMavenProject = fileExists('pom.xml')
+            // def isGradleProject = fileExists('build.gradle') || fileExists('build.gradle.kts')
+            // def hasJavaFiles = sh(
+            //     script: "find . -name '*.java' -type f | head -1",
+            //     returnStdout: true
+            // ).trim()
 
-            echo "INFO - Rilevamento progetto:"
-            echo "INFO - Maven: ${isMavenProject}"
-            echo "INFO - Gradle: ${isGradleProject}"
-            echo "INFO - Java files: ${hasJavaFiles ? 'Si' : 'No'}"
+            // echo "INFO - Project Detection:"
+            // echo "INFO - Maven: ${isMavenProject}"
+            // echo "INFO - Gradle: ${isGradleProject}"
+            // echo "INFO - Java files: ${hasJavaFiles ? 'Si' : 'No'}"
 
-            if (isMavenProject) {
-                echo "INFO - Progetto Maven rilevato, compilo prima dell'analisi"
+            // if (isMavenProject) {
+            //     echo "INFO - Progetto Maven detected, compile before analysis"
                 
-                // Compila il progetto Maven
-                sh "mvn clean compile -DskipTests=true"
+            //     // Compile
+            //     sh "mvn clean compile -DskipTests=true"
                 
-                // Trova i binari compilati
-                def targetDirs = sh(
-                    script: "find . -name target -type d -exec find {} -name '*.class' -type f \\; | head -1 | xargs dirname 2>/dev/null || echo ''",
-                    returnStdout: true
-                ).trim()
+            //     // find binaries
+            //     def targetDirs = sh(
+            //         script: "find . -name target -type d -exec find {} -name '*.class' -type f \\; | head -1 | xargs dirname 2>/dev/null || echo ''",
+            //         returnStdout: true
+            //     ).trim()
                 
-                def binaryPaths = targetDirs ? targetDirs : "./target/classes"
+            //     def binaryPaths = targetDirs ? targetDirs : "./target/classes"
                 
-                sh """
-                    '${env.SONAR_SCANNER}/bin/sonar-scanner' \\
-                    -Dsonar.projectKey='${projectKey}' \\
-                    -Dsonar.projectName='${projectName}' \\
-                    -Dsonar.projectVersion='${projectVersion}' \\
-                    -Dsonar.sources=src/main \\
-                    -Dsonar.tests=src/test \\
-                    -Dsonar.java.binaries='${binaryPaths}' \\
-                    -Dsonar.exclusions='${defaultExclusions}' \\
-                    -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
-                    -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
-                    -Dsonar.scm.provider=git \\
-                    -Dsonar.sourceEncoding=UTF-8
-                """
+            //     sh """
+            //         '${env.SONAR_SCANNER}/bin/sonar-scanner' \\
+            //         -Dsonar.projectKey='${projectKey}' \\
+            //         -Dsonar.projectName='${projectName}' \\
+            //         -Dsonar.projectVersion='${projectVersion}' \\
+            //         -Dsonar.sources=src/main \\
+            //         -Dsonar.tests=src/test \\
+            //         -Dsonar.java.binaries='${binaryPaths}' \\
+            //         -Dsonar.exclusions='${defaultExclusions}' \\
+            //         -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
+            //         -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
+            //         -Dsonar.scm.provider=git \\
+            //         -Dsonar.sourceEncoding=UTF-8
+            //     """
                 
-            } else if (isGradleProject) {
-                echo "INFO - Progetto Gradle rilevato, compilo prima dell'analisi"
+            // } else if (isGradleProject) {
+            //     echo "INFO - Gradle Project detected, compiling"
                 
-                // Compila il progetto Gradle
-                sh "./gradlew compileJava -x test || gradle compileJava -x test"
+            //     // Compila il progetto Gradle
+            //     sh "./gradlew compileJava -x test || gradle compileJava -x test"
                 
-                // Trova i binari compilati
-                def buildDirs = sh(
-                    script: "find . -path '*/build/classes' -type d | head -1 || echo './build/classes/java/main'",
-                    returnStdout: true
-                ).trim()
+            //     // Trova i binari compilati
+            //     def buildDirs = sh(
+            //         script: "find . -path '*/build/classes' -type d | head -1 || echo './build/classes/java/main'",
+            //         returnStdout: true
+            //     ).trim()
                 
-                sh """
-                    '${env.SONAR_SCANNER}/bin/sonar-scanner' \\
-                    -Dsonar.projectKey='${projectKey}' \\
-                    -Dsonar.projectName='${projectName}' \\
-                    -Dsonar.projectVersion='${projectVersion}' \\
-                    -Dsonar.sources=src/main \\
-                    -Dsonar.tests=src/test \\
-                    -Dsonar.java.binaries='${buildDirs}' \\
-                    -Dsonar.exclusions='${defaultExclusions}' \\
-                    -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
-                    -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
-                    -Dsonar.scm.provider=git \\
-                    -Dsonar.sourceEncoding=UTF-8
-                """
+            //     sh """
+            //         '${env.SONAR_SCANNER}/bin/sonar-scanner' \\
+            //         -Dsonar.projectKey='${projectKey}' \\
+            //         -Dsonar.projectName='${projectName}' \\
+            //         -Dsonar.projectVersion='${projectVersion}' \\
+            //         -Dsonar.sources=src/main \\
+            //         -Dsonar.tests=src/test \\
+            //         -Dsonar.java.binaries='${buildDirs}' \\
+            //         -Dsonar.exclusions='${defaultExclusions}' \\
+            //         -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
+            //         -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
+            //         -Dsonar.scm.provider=git \\
+            //         -Dsonar.sourceEncoding=UTF-8
+            //     """
                 
-            } else if (hasJavaFiles) {
-                echo "INFO - File Java rilevati senza build tool, escludo dall'analisi"
+            // } else if (hasJavaFiles) {
+            //     echo "INFO - File Java rilevati senza build tool, escludo dall'analisi"
                 
-                // Per progetti Java senza build tool, escludiamo i file Java
-                def javaExclusions = defaultExclusions + ',**/*.java'
+            //     sh """
+            //         '${env.SONAR_SCANNER}/bin/sonar-scanner' \\
+            //         -Dsonar.projectKey='${projectKey}' \\
+            //         -Dsonar.projectName='${projectName}' \\
+            //         -Dsonar.projectVersion='${projectVersion}' \\
+            //         -Dsonar.sources=. \\
+            //         -Dsonar.java.binaries=. \\
+            //         -Dsonar.exclusions='${defaultExclusions}' \\
+            //         -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
+            //         -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
+            //         -Dsonar.scm.provider=git \\
+            //         -Dsonar.sourceEncoding=UTF-8
+            //     """
                 
-                sh """
-                    '${env.SONAR_SCANNER}/bin/sonar-scanner' \\
-                    -Dsonar.projectKey='${projectKey}' \\
-                    -Dsonar.projectName='${projectName}' \\
-                    -Dsonar.projectVersion='${projectVersion}' \\
-                    -Dsonar.sources=. \\
-                    -Dsonar.exclusions='${javaExclusions}' \\
-                    -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
-                    -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
-                    -Dsonar.scm.provider=git \\
-                    -Dsonar.sourceEncoding=UTF-8
-                """
+            // } else {
+                echo "INFO - Generic analysis"
                 
-            } else {
-                echo "INFO - Nessun progetto Java rilevato, analisi generica"
                 
-                // Analisi standard per progetti non-Java
                 sh """
                     '${env.SONAR_SCANNER}/bin/sonar-scanner' \\
                     -Dsonar.projectKey='${projectKey}' \\
@@ -137,10 +136,12 @@ def call(Map config = [:]) {
                     -Dsonar.sources=. \\
                     -Dsonar.exclusions='${defaultExclusions}' \\
                     -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
-                    -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
+                    -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\ 
                     -Dsonar.scm.provider=git \\
                     -Dsonar.sourceEncoding=UTF-8
                 """
+
+                //sonar.login deprecato, si usa sonar.token
             }
         }
     }

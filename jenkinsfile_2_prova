@@ -21,6 +21,24 @@ pipeline {
             steps {
                 git branch: params.BRANCH, url: params.REPO_URL
             }
+            // steps {
+            //     script {
+            //         sh 'rm -rf -- ..?* .[!.]* *'
+            //     }
+            //     checkout([
+            //             $class                           : 'GitSCM',
+            //             branches                         : [[name: env.gitlabBranch]],
+            //             doGenerateSubmoduleConfigurations: false,
+            //             extensions                       : [], --> forse CleanBeforeCheckout
+            //             submoduleCfg                     : [],
+            //             userRemoteConfigs                : [
+            //                     [
+            //                             credentialsId: '0ce2d803-fcc5-4faf-b45f-5fca9f59ffd8',
+            //                             url          : env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
+            //                     ]
+            //             ]
+            //     ])
+            // }
         }
 
         stage('SonarQube Analysis') {
