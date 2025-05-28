@@ -3,6 +3,11 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven3'
+        //gradle 'Gradle'  // Opzionale, se hai Gradle configurato
+    }
+
     parameters {
         string(name: 'REPO_URL', defaultValue: '', description: 'GitHub repo to scan')
         string(name: 'BRANCH', defaultValue: 'main', description: 'Branch of the repo to scan')
