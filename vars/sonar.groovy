@@ -29,12 +29,8 @@ def call(Map config = [:]) {
                 }
             } else {
                 echo "Nessun pom.xml trovato. Uso sonar-scanner CLI."
-                def sonarCmd = "${env.SONAR_SCANNER}/bin/sonar-scanner " +
-                   "-Dsonar.projectKey=${projectKey} " +
-                   "-Dsonar.sources=. " +
-                   "-Dsonar.login=${env.SONAR_TOKEN}"
-
-                sh sonarCmd
+                
+                sh "${env.SONAR_SCANNER}/bin/sonar-scanner -Dsonar.projectKey=${projectKey} -Dsonar.sources=. -Dsonar.login=${env.SONAR_TOKEN}"
             }
         }
     }
