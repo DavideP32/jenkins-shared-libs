@@ -28,11 +28,7 @@ def call(Map config = [:]) {
 
                 echo "Trovato pom.xml in: ${pomDir}"
                 dir(pomDir) {
-                    sh """
-                        mvn clean verify sonar:sonar \
-                        -Dsonar.projectKey=${projectKey} \
-                        -Dsonar.login=${env.SONAR_TOKEN}
-                    """
+                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=${projectKey} -Dsonar.login=${env.SONAR_TOKEN}"
                 }
             } else {
                 echo "Nessun pom.xml trovato. Uso sonar-scanner CLI."
