@@ -27,13 +27,13 @@ def call(Map config = [:]) {
                 ).trim()
 
                 echo "Trovato pom.xml in: ${pomDir}"
-                dir(pomDir) {
-                    sh "mvn clean verify sonar:sonar -Dsonar.projectKey=${projectKey} -Dsonar.login=${env.SONAR_TOKEN}"
+                dir (pomDir) {
+                   // sh "mvn clean verify sonar:sonar -Dsonar.projectKey=${projectKey} -Dsonar.login=${env.SONAR_TOKEN}"
                 }
             } else {
                 echo "Nessun pom.xml trovato. Uso sonar-scanner CLI."
                 // Usare riga singola per evitare errori di shell
-                sh "sonar-scanner -Dsonar.projectKey=${projectKey} -Dsonar.sources=. -Dsonar.login=${env.SONAR_TOKEN}"
+                //sh "${env.SONAR_SCANNER}/bin/sonar-scanner -Dsonar.projectKey=${projectKey} -Dsonar.sources=. -Dsonar.login=${env.SONAR_TOKEN}"
             }
         }
     }
