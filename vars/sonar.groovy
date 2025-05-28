@@ -7,13 +7,18 @@ def call(Map config = [:]) {
             env.SONAR_SCANNER = tool 'SonarScanner'
             env.SONAR_TOKEN = credentials('jenkins-sonar')
 
-            // Autodetect pom.xml
-            def pomDir = sh(
-                script: "find . -name pom.xml | head -n 1 | xargs dirname",
+            // Trova pom.xml se presente
+            def pomPath = sh(
+                script: "find . -name pom.xml | head -n 1",
                 returnStdout: true
             ).trim()
 
-            if (pomDir) {
+            if (pomPath) {
+                def pomDir = sh(
+                    script: "dirname ${pomPath}",
+                    returnStdout: true
+                ).trim()
+
                 echo "Trovato pom.xml in: ${pomDir}"
                 dir(pomDir) {
                     sh """
