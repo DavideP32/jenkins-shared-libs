@@ -12,6 +12,7 @@ pipeline {
             }
                 
             steps {
+                echo "starting SCM checkout"
                 script {
                     sh 'rm -rf -- ..?* .[!.]* *'
                 }
@@ -121,6 +122,7 @@ pipeline {
 
         stage('QA') {
             steps {
+                echo "starting QA"
                 script {
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
@@ -222,6 +224,7 @@ pipeline {
         }
 
         stage('Push QG Result') {
+            echo "push QG"
             environment {
                 GITLAB_TOKEN = credentials('gitlab-sistemisti-qg-token')
             }
