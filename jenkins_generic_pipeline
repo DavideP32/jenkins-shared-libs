@@ -1,0 +1,289 @@
+pipeline {
+    agent any
+
+    def defaultExclusions = [
+                '**/node_modules/**',
+                '**/target/**',
+                '**/build/**',
+                '**/dist/**',
+                '**/out/**',
+                '**/bin/**',
+                '**/.git/**',
+                '**/.svn/**',
+                '**/vendor/**',
+                '**/coverage/**',
+                '**/__pycache__/**',
+                '**/*.pyc',
+                '**/*.min.js',
+                '**/logs/**',
+                '**/.env',
+                '**/.DS_Store',
+                '**/thumbs.db'
+            ].join(',')
+    
+    stage('SCM Checkout') {
+        environment {
+            GITLAB_TOKEN = credentials('gitlab-sistemisti-qg-token')
+        }
+              
+        steps {
+            script {
+                sh 'rm -rf -- ..?* .[!.]* *'
+            }
+            checkout([
+                    $class                           : 'GitSCM',
+                    branches                         : [[name: env.gitlabBranch]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions                       : [], 
+                    submoduleCfg                     : [],
+                    userRemoteConfigs                : [
+                            [
+                                    credentialsId: '0ce2d803-fcc5-4faf-b45f-5fca9f59ffd8',
+                                    url          : env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabProject + ".git"
+                            ]
+                    ]
+            ])
+
+            /*
+            SCRIPT SUCCESSIVO:
+
+            "Prima di investire tempo e risorse in una build completa, assicurati che sia effettivamente necessaria"
+                 - Forza versioning corretto: Solo tag x.y.z-release sono accettati
+                 - Evita sovrascritture accidentali di report
+                 - Mantiene tracciabilità: Ogni versione ha il suo report unico
+            */
+
+            script {
+//           "Se il commit corrente ha un tag di versione (tipo v1.0.0-release) → è una release"
+//           "Se non ha tag → è codice in sviluppo (committato normalmente senza tag)"
+                def tag = sh(
+                        script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', //trova il tag se c'è, altrimenti echo vuoto.
+                        returnStdout: true
+                ).trim()
+
+                if (tag) {
+                    echo "The current commit has a tag: ${tag}"
+                    if (tag ==~ /^\d+\.\d+\.\d+-release$/) {
+                        echo "Tag matches the format x.y.z-release."
+                        APPLICATION_VERSION = tag.split("-")[0]
+                    } else { //qua mettiamo in conto di poter avere un tag anche su dev, ma non sarà appunto -release
+                        echo "Tag does NOT match the format x.y.z-release."
+                        APPLICATION_VERSION = 'dev'
+                    }
+                } else {
+                    echo "There is no tag."
+                    APPLICATION_VERSION = 'dev'
+                }
+
+                if (APPLICATION_VERSION != "dev") {
+                    echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
+                    // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
+                    def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
+
+                    // Effettua la chiamata all'API per verificare la presenza della versione
+                    /*
+                    •	-k: ignora i certificati SSL non validi (utile se GitLab usa HTTPS con un certificato self-signed).
+                    •	-s: silenzioso (non mostra progress bar, messaggi di errore, ecc.).
+                    •	-H "PRIVATE-TOKEN: $GITLAB_TOKEN": aggiunge un header HTTP per autenticarsi con token.
+                    •	"$apiUrl": è la URL dinamica calcolata prima.
+                    */
+                    def response = sh(
+                            script: """curl -k -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "${apiUrl}" """,
+                            returnStdout: true
+                    ).trim()
+
+
+                    try {
+                        def jsonResponse = new groovy.json.JsonSlurper().parseText(response) //prende la risposta della chiamata api e la parsa a json
+                        def versionExists = jsonResponse.any { it.type == "tree" && it.name == APPLICATION_VERSION } //cerca nel JSON se c'è già la versione indicata negli oggetti di tipo 'tree'
+                        if (versionExists) {
+                            error "La versione ${APPLICATION_VERSION} è stata già buildata in precedenza. E' necessario aggiornarla."
+                        } else {
+                            echo "Versione '${APPLICATION_VERSION}."
+                        }
+                    } catch (Exception e) {
+                        echo "Errore durante l'analisi della risposta JSON: ${e.message}"
+                        error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
+                    }
+
+                }
+            }
+        }
+    }
+
+    stage('QA') {
+        steps {
+            script {
+                withSonarQubeEnv('SonarQubeNumera') {
+                    script {
+                        QA_WD = pwd()
+                        SONAR_URL = env.SONAR_HOST_URL
+                        def scannerHome = tool 'sonarQubeScanner4'
+                        def javaHome = tool 'JDK_21.0.3'
+                        def branch = env.gitlabBranch
+                        branch = branch.replace('/', '-')
+                        branch = branch.replace('*', '')
+                        if (env.SONAR_IS_UP == 'true') {
+                            sh """
+                                cd //tmp && \\
+                                JAVA_HOME=${javaHome} \\
+                                '${scannerHome}/bin/sonar-scanner' \\
+                                -Dsonar.projectBaseDir=${QA_WD} \\
+                                -Dsonar.projectKey=${env.gitlabProject}-${branch}
+                                -Dsonar.projectName=${env.gitlabProject}-${branch} \\
+                                -Dsonar.projectVersion='${projectVersion}' \\
+                                -Dsonar.sources=. \\
+                                -Dsonar.exclusions='${defaultExclusions}' \\
+                                -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
+                                -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
+                                -Dsonar.java.binaries=.
+                            """
+                            //sonar.login è deprecata
+                        }
+                    }
+                }
+            }
+
+            script {
+                QA_WD = pwd()
+                sleep(30)
+                timeout(time: 360, unit: 'SECONDS') {
+                    if (env.SONAR_IS_UP == 'true') {
+                        def qg = waitForQualityGate() //Wait for SonarQube analysis to be completed and return quality gate status
+                        def branch = env.gitlabBranch
+                        branch = branch.replace('/', '-')
+                        branch = branch.replace('*', '')
+                        /*
+                        -X POST	                        invia una richiesta HTTP POST
+                        -u $USERPASS                    invia le credenziali (tipicamente username:token o username:password) per autenticazione basic HTTP
+                        -i	                            include header della risposta HTTP nell’output (es: HTTP/1.1 200 OK)
+                        ${SONAR_URL}	                variabile d'ambiente che contiene l’URL del server SonarQube
+                        api/permissions/apply_template	endpoint API di SonarQube per applicare un template di permessi a un progetto
+                        templateName=...	            nome del template di permessi definito su SonarQube
+                        projectKey=...	                identificatore del progetto su SonarQube, costruito come gruppo-progetto-branch
+                        */
+                        withCredentials([usernameColonPassword(credentialsId: 'sonarqube-api-token', variable: 'USERPASS')]) {
+                            sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabProject + "-" + branch + "'"
+                            echo 'Configurato permission template per il project sonar'
+
+
+                            //estrazione coverage da sonar
+                            sh "curl --fail -s -L -X GET -u $USERPASS '$SONAR_URL/api/measures/component?component=${env.gitlabProject}-${branch}&metricKeys=coverage,sqale_debt_ratio' -o sonar_measures.json"
+                            def coverageFile = readFile "sonar_measures.json"
+                            def coverageJson = new JsonSlurper().parseText(coverageFile)
+                            Float coverage = 0
+                            Float techDeb = 0
+                            Float securityRating = 0
+
+                            coverageJson.component.measures.each {
+                                if (it.metric == "coverage") coverage = Float.parseFloat(it.value)
+                                if (it.metric == "sqale_debt_ratio") techDeb = Float.parseFloat(it.value)
+                                if (it.metric == "security_rating") securityRating = Float.parseFloat(it.value)
+                            }
+
+                            //aggiungo l'url della dashboard sonar alla mappa
+                            QA_RESULT.put("sonarqube.report-url", "$SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
+                            //aggiungo l'esito dell'analisi Sonar
+                            //rendo sonarQUBE non bloccante, il primo KO diventa OK
+                            QA_RESULT.put("sonarqube.esito", env.SONAR_IS_BLOCKING != 'false' && qg.status != 'OK' && qg.status != 'WARN' ? "KO" : "OK")
+                            //aggiungo la descrizione per sonar
+                            QA_RESULT.put("sonarqube.description", "Coverage del progetto: " + coverage + "\ndebito tecnico: " + techDeb + "\nsecurity rating: " + securityRating)
+                        }
+
+                        if (qg.status != 'OK' && qg.status != 'WARN') {
+                            echo("Pipeline in errore a causa del Quality Gate impostato su Sonar. Status: ${qg.status}. Controllare la link $SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
+                            echo(QA_RESULT["sonarqube.description"])
+                            currentBuild.result = 'UNSTABLE'
+                        }
+                    } else {
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+
+                        echo 'ATTENZIONE VERIFICA QUALITY GATE SONAR NON ATTIVO Variabile ambiente env.SONAR_IS_UP ' + env.SONAR_IS_UP
+
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                    }
+                }
+            }
+        }
+    }
+
+    stage('Push QG Result') {
+        environment {
+            GITLAB_TOKEN = credentials('gitlab-sistemisti-qg-token')
+        }
+        steps {
+
+            script {
+                dir("tmp") {
+                    checkout([
+                        $class                           : 'GitSCM',
+                        branches                         : [[name: "master"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions                       : [],
+                        submoduleCfg                     : [],
+                        userRemoteConfigs                : [
+                                [
+                                        credentialsId: '0ce2d803-fcc5-4faf-b45f-5fca9f59ffd8',
+                                        url          : "http://172.16.63.237/Devops/pipeline-build.git"
+                                ]
+                        ]
+                    ])
+                }
+                if (QA_RESULT.get("sonarqube.esito") == "KO"){
+                    QA_RESULT.put("quality-assurance.esito", "KO")
+                } else QA_RESULT.put("quality-assurance.esito", "OK")
+
+                if (!APPLICATION_VERSION.equals("dev")) {
+                    def metadataFile = readFile "tmp/metadata.xml"
+                    def metadataFileXml = new XmlSlurper(false, false).parseText(metadataFile)
+                    //aggiorno i valori del pom classifier
+                    metadataFileXml.'quality-assurance'.esito = QA_RESULT.get("quality-assurance.esito")
+                    metadataFileXml.'quality-assurance'.sonarqube.esito = QA_RESULT.get("sonarqube.esito")
+                    metadataFileXml.'quality-assurance'.sonarqube.'report-url' = QA_RESULT.get("sonarqube.report-url")
+                    metadataFileXml.'quality-assurance'.sonarqube.description = QA_RESULT.get("sonarqube.description")
+                    // metadataFileXml.'quality-assurance'.dependencytrack.esito = QA_RESULT.get("dependencytrack.esito")
+                    // metadataFileXml.'quality-assurance'.dependencytrack.'report-url' = QA_RESULT.get("dependencytrack.url")
+                    // metadataFileXml.'quality-assurance'.dependencytrack.description = QA_RESULT.get("dependencytrack.description")
+
+                    writeFile file: "tmp/metadataFile.xml", text: groovy.xml.XmlUtil.serialize(metadataFileXml)
+                    def metadataContent = readFile("tmp/metadataFile.xml")
+
+                    def nameFile = env.gitlabGroup + "/" + env.gitlabProject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
+                    def payload = """
+                    {
+                        "branch": "master",
+                        "commit_message": "Adding file ${nameFile}.xml",
+                        "actions": [
+                        {
+                            "action": "create",
+                            "file_path": "${nameFile}.xml",
+                            "content": ${groovy.json.JsonOutput.toJson(metadataContent)}
+                        }
+                        ]
+                    }
+                    """
+
+                        sh """
+                        curl -k --request POST --header "PRIVATE-TOKEN: $GITLAB_TOKEN" --header "Content-Type: application/json" \
+                        --data '${payload}' "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/commits"
+                    """
+
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                sh 'rm -rf -- ..?* .[!.]* *'
+            }
+        }
+    }
+}
