@@ -224,11 +224,11 @@ pipeline {
         }
 
         stage('Push QG Result') {
-            echo "push QG"
             environment {
                 GITLAB_TOKEN = credentials('gitlab-sistemisti-qg-token')
             }
             steps {
+                echo "push QG"
 
                 script {
                     dir("tmp") {
