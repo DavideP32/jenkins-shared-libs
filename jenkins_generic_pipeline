@@ -69,8 +69,8 @@ pipeline {
 
                     
                     env.DEFAULT_EXCLUSIONS = defaultExclusions
-    //           "Se il commit corrente ha un tag di versione (tipo v1.0.0-release) → è una release"
-    //           "Se non ha tag → è codice in sviluppo (committato normalmente senza tag)"
+                    //           "Se il commit corrente ha un tag di versione (tipo v1.0.0-release) → è una release"
+                    //           "Se non ha tag → è codice in sviluppo (committato normalmente senza tag)"
                     def tag = sh(
                             script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', //trova il tag se c'è, altrimenti echo vuoto.
                             returnStdout: true
@@ -121,7 +121,7 @@ pipeline {
                         //     error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
                         // }
 
-                    }
+                    //}
                 }
             }
         }
