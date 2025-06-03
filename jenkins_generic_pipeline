@@ -177,7 +177,7 @@ pipeline {
                                     -Dsonar.exclusions='${env.DEFAULT_EXCLUSIONS}' \\
                                     -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
                                     -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
-                                    -Dsonar.java.binaries=target/classes
+                                    -Dsonar.java.binaries=./target/classes
                                 """
                                 //sonar.login è deprecata
                             }
