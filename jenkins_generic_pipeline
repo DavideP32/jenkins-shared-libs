@@ -10,7 +10,7 @@ pipeline {
     //RIMUOVERE!!!
     environment{
         SONAR_IS_UP = 'true'
-        SONAR_HOST_URL = 'http://sonarqube:9000/'
+        SONAR_HOST_URL = 'http://sonarqube:9000'
     }
 
     
