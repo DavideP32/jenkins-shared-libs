@@ -186,7 +186,7 @@ pipeline {
                 }
 
                 script {
-                    QA_WD = pwd()
+                    def QA_WD = pwd()
                     sleep(30)
                     timeout(time: 360, unit: 'SECONDS') {
                         if (env.SONAR_IS_UP == 'true') {
