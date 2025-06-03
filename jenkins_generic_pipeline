@@ -165,7 +165,7 @@ pipeline {
                             branch = branch.replace('*', '')
                             if (env.SONAR_IS_UP == 'true') {
                                 //    cd //tmp && \\
-                                sh "sh 'find . -name \"*.class\"'"
+                                sh 'find . -name "*.class"'
                                 sh """
                                     JAVA_HOME=${javaHome} \\
                                     '${scannerHome}/bin/sonar-scanner' \\
