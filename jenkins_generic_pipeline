@@ -219,9 +219,9 @@ pipeline {
                                 Float securityRating = 0
 
                                 coverageJson.component.measures.each {
-                                    if (it.metric == "coverage") coverage = Float.parseFloat(it.value)
-                                    if (it.metric == "sqale_debt_ratio") techDeb = Float.parseFloat(it.value)
-                                    if (it.metric == "security_rating") securityRating = Float.parseFloat(it.value)
+                                    if (it.metric == "coverage" && it.value) coverage = it.value.toFloat()
+                                    if (it.metric == "sqale_debt_ratio" && it.value) techDeb = it.value.toFloat()
+                                    if (it.metric == "security_rating" && it.value) securityRating = it.value.toFloat()
                                 }
 
                                 //aggiungo l'url della dashboard sonar alla mappa
@@ -267,14 +267,14 @@ pipeline {
                     dir("tmp") {
                         checkout([
                             $class                           : 'GitSCM',
-                            branches                         : [[name: "master"]],
+                            branches                         : [[name: 'main']], //[[name: "master"]],
                             doGenerateSubmoduleConfigurations: false,
                             extensions                       : [],
                             submoduleCfg                     : [],
                             userRemoteConfigs                : [
                                     [
                                             credentialsId: '0ce2d803-fcc5-4faf-b45f-5fca9f59ffd8',
-                                            url          : "http://172.16.63.237/Devops/pipeline-build.git"
+                                            url          : 'https://gitlab.com/Dev1833023/pipeline-build.git' //"http://172.16.63.237/Devops/pipeline-build.git"
                                     ]
                             ]
                         ])
