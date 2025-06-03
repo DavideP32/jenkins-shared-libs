@@ -130,6 +130,25 @@ pipeline {
             }
         }
 
+        stage('Build') {
+            steps {
+                script {
+                    def javaHome = tool 'JDK_21.0.3'
+                    sh """
+                        export JAVA_HOME=${javaHome}
+                        export PATH=${javaHome}/bin:\$PATH
+                        if [ -f "mvnw" ]; then
+                            ./mvnw clean compile
+                        elif [ -f "pom.xml" ]; then
+                            mvn clean compile
+                        else
+                            echo "No Maven project found, skipping build"
+                        fi
+                    """
+                }
+            }
+        }
+
         stage('QA') {
             steps {
                 script {
@@ -144,8 +163,8 @@ pipeline {
                             branch = branch.replace('/', '-')
                             branch = branch.replace('*', '')
                             if (env.SONAR_IS_UP == 'true') {
+                                //    cd //tmp && \\
                                 sh """
-                                    cd //tmp && \\
                                     JAVA_HOME=${javaHome} \\
                                     '${scannerHome}/bin/sonar-scanner' \\
                                     -Dsonar.projectBaseDir=${QA_WD} \\
