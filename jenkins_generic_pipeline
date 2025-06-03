@@ -134,12 +134,13 @@ pipeline {
             steps {
                 script {
                     def javaHome = tool 'JDK_21.0.3'
+                    def mavenHome = tool 'Maven-3.9.0' // Configura il nome del tuo Maven in Jenkins
+                    
                     sh """
                         export JAVA_HOME=${javaHome}
-                        export PATH=${javaHome}/bin:\$PATH
-                        if [ -f "mvnw" ]; then
-                            ./mvnw clean compile
-                        elif [ -f "pom.xml" ]; then
+                        export PATH=${mavenHome}/bin:${javaHome}/bin:\$PATH
+                        
+                        if [ -f "pom.xml" ]; then
                             mvn clean compile
                         else
                             echo "No Maven project found, skipping build"
