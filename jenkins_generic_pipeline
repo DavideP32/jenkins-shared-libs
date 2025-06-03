@@ -186,6 +186,7 @@ pipeline {
                 }
 
                 script {
+                    def SONAR_URL = env.SONAR_HOST_URL
                     def QA_WD = pwd()
                     sleep(30)
                     timeout(time: 360, unit: 'SECONDS') {
