@@ -170,7 +170,7 @@ pipeline {
                                     JAVA_HOME=${javaHome} \\
                                     '${scannerHome}/bin/sonar-scanner' \\
                                     -Dsonar.projectBaseDir=${QA_WD} \\
-                                    -Dsonar.projectKey=${env.gitlabProject}-${branch}
+                                    -Dsonar.projectKey=${env.gitlabProject}-${branch} \\
                                     -Dsonar.projectName=${env.gitlabProject}-${branch} \\
                                     -Dsonar.projectVersion='${APPLICATION_VERSION}' \\
                                     -Dsonar.sources=. \\
