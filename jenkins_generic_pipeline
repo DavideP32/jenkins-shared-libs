@@ -1,5 +1,9 @@
 import groovy.json.JsonSlurper
 
+
+def QA_RESULT = [:]
+
+
 pipeline {
     agent any
 
@@ -132,9 +136,8 @@ pipeline {
                     echo "starting QA"
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
-                            def QA_RESULT = [:]
-                            QA_WD = pwd()
-                            SONAR_URL = env.SONAR_HOST_URL
+                            def QA_WD = pwd()
+                            def SONAR_URL = env.SONAR_HOST_URL
                             def scannerHome = tool 'sonarQubeScanner4'
                             def javaHome = tool 'JDK_21.0.3'
                             def branch = env.gitlabBranch
@@ -148,7 +151,7 @@ pipeline {
                                     -Dsonar.projectBaseDir=${QA_WD} \\
                                     -Dsonar.projectKey=${env.gitlabProject}-${branch}
                                     -Dsonar.projectName=${env.gitlabProject}-${branch} \\
-                                    -Dsonar.projectVersion='${projectVersion}' \\
+                                    -Dsonar.projectVersion='${APPLICATION_VERSION}' \\
                                     -Dsonar.sources=. \\
                                     -Dsonar.exclusions='${env.DEFAULT_EXCLUSIONS}' \\
                                     -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
