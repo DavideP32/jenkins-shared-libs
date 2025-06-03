@@ -130,7 +130,7 @@ pipeline {
             steps {
                 script {
                     echo "starting QA"
-                    withSonarQubeEnv('jenkins-sonar'){ //('SonarQubeNumera') {
+                    withSonarQubeEnv('SonarQubeNumera') {
                         script {
                             def QA_RESULT = [:]
                             QA_WD = pwd()
