@@ -3,6 +3,12 @@ import groovy.json.JsonSlurper
 pipeline {
     agent any
 
+    //RIMUOVERE!!!
+    environment{
+        SONAR_IS_UP = 'true',
+        SONAR_HOST_URL = 'http://sonarqube:9000/'
+    }
+
     
     stages{
 
@@ -84,36 +90,36 @@ pipeline {
                         APPLICATION_VERSION = 'dev'
                     }
 
-                    if (APPLICATION_VERSION != "dev") {
-                        echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
-                        // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
-                        def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
+                    // if (APPLICATION_VERSION != "dev") {
+                    //     echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
+                    //     // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
+                    //     def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
 
-                        // Effettua la chiamata all'API per verificare la presenza della versione
-                        /*
-                        •	-k: ignora i certificati SSL non validi (utile se GitLab usa HTTPS con un certificato self-signed).
-                        •	-s: silenzioso (non mostra progress bar, messaggi di errore, ecc.).
-                        •	-H "PRIVATE-TOKEN: $GITLAB_TOKEN": aggiunge un header HTTP per autenticarsi con token.
-                        •	"$apiUrl": è la URL dinamica calcolata prima.
-                        */
-                        def response = sh(
-                                script: """curl -k -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "${apiUrl}" """,
-                                returnStdout: true
-                        ).trim()
+                    //     // Effettua la chiamata all'API per verificare la presenza della versione
+                    //     /*
+                    //     •	-k: ignora i certificati SSL non validi (utile se GitLab usa HTTPS con un certificato self-signed).
+                    //     •	-s: silenzioso (non mostra progress bar, messaggi di errore, ecc.).
+                    //     •	-H "PRIVATE-TOKEN: $GITLAB_TOKEN": aggiunge un header HTTP per autenticarsi con token.
+                    //     •	"$apiUrl": è la URL dinamica calcolata prima.
+                    //     */
+                    //     def response = sh(
+                    //             script: """curl -k -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "${apiUrl}" """,
+                    //             returnStdout: true
+                    //     ).trim()
 
 
-                        try {
-                            def jsonResponse = new groovy.json.JsonSlurper().parseText(response) //prende la risposta della chiamata api e la parsa a json
-                            def versionExists = jsonResponse.any { it.type == "tree" && it.name == APPLICATION_VERSION } //cerca nel JSON se c'è già la versione indicata negli oggetti di tipo 'tree'
-                            if (versionExists) {
-                                error "La versione ${APPLICATION_VERSION} è stata già buildata in precedenza. E' necessario aggiornarla."
-                            } else {
-                                echo "Versione '${APPLICATION_VERSION}."
-                            }
-                        } catch (Exception e) {
-                            echo "Errore durante l'analisi della risposta JSON: ${e.message}"
-                            error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
-                        }
+                        // try {
+                        //     def jsonResponse = new groovy.json.JsonSlurper().parseText(response) //prende la risposta della chiamata api e la parsa a json
+                        //     def versionExists = jsonResponse.any { it.type == "tree" && it.name == APPLICATION_VERSION } //cerca nel JSON se c'è già la versione indicata negli oggetti di tipo 'tree'
+                        //     if (versionExists) {
+                        //         error "La versione ${APPLICATION_VERSION} è stata già buildata in precedenza. E' necessario aggiornarla."
+                        //     } else {
+                        //         echo "Versione '${APPLICATION_VERSION}."
+                        //     }
+                        // } catch (Exception e) {
+                        //     echo "Errore durante l'analisi della risposta JSON: ${e.message}"
+                        //     error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
+                        // }
 
                     }
                 }
@@ -122,10 +128,11 @@ pipeline {
 
         stage('QA') {
             steps {
-                echo "starting QA"
                 script {
-                    withSonarQubeEnv('SonarQubeNumera') {
+                    echo "starting QA"
+                    withSonarQubeEnv('jenkins-sonar'){ //('SonarQubeNumera') {
                         script {
+                            def QA_RESULT = [:]
                             QA_WD = pwd()
                             SONAR_URL = env.SONAR_HOST_URL
                             def scannerHome = tool 'sonarQubeScanner4'
@@ -173,7 +180,8 @@ pipeline {
                             projectKey=...	                identificatore del progetto su SonarQube, costruito come gruppo-progetto-branch
                             */
                             withCredentials([usernameColonPassword(credentialsId: 'sonarqube-api-token', variable: 'USERPASS')]) {
-                                sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabProject + "-" + branch + "'"
+                                //sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabProject + "-" + branch + "'"
+                                sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Default%20template&projectKey=" + env.gitlabProject + "-" + branch + "'"
                                 echo 'Configurato permission template per il project sonar'
 
 
