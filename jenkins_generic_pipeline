@@ -134,7 +134,7 @@ pipeline {
             steps {
                 script {
                     def javaHome = tool 'JDK_21.0.3'
-                    def mavenHome = tool 'Maven-3.9.0' // Configura il nome del tuo Maven in Jenkins
+                    def mavenHome = tool 'Maven3' // Configura il nome del tuo Maven in Jenkins
                     
                     sh """
                         export JAVA_HOME=${javaHome}
