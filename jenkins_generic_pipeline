@@ -130,25 +130,25 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                script {
-                    def javaHome = tool 'JDK_21.0.3'
-                    def mavenHome = tool 'Maven3' // Configura il nome del tuo Maven in Jenkins
+        // stage('Build') {
+        //     steps {
+        //         script {
+        //             def javaHome = tool 'JDK_21.0.3'
+        //             def mavenHome = tool 'Maven3' // Configura il nome del tuo Maven in Jenkins
                     
-                    sh """
-                        export JAVA_HOME=${javaHome}
-                        export PATH=${mavenHome}/bin:${javaHome}/bin:\$PATH
+        //             sh """
+        //                 export JAVA_HOME=${javaHome}
+        //                 export PATH=${mavenHome}/bin:${javaHome}/bin:\$PATH
                         
-                        if [ -f "pom.xml" ]; then
-                            mvn clean compile
-                        else
-                            echo "No Maven project found, skipping build"
-                        fi
-                    """
-                }
-            }
-        }
+        //                 if [ -f "pom.xml" ]; then
+        //                     mvn clean compile
+        //                 else
+        //                     echo "No Maven project found, skipping build"
+        //                 fi
+        //             """
+        //         }
+        //     }
+        // }
 
         stage('QA') {
             steps {
@@ -177,7 +177,7 @@ pipeline {
                                     -Dsonar.exclusions='${env.DEFAULT_EXCLUSIONS}' \\
                                     -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
                                     -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
-                                    -Dsonar.java.binaries=./target/classes
+                                    -Dsonar.java.binaries=.
                                 """
                                 //sonar.login è deprecata
                             }
@@ -299,7 +299,7 @@ pipeline {
 
                         def metadataFile = readFile "tmp/metadata.xml"
     
-                        // Invece di parsare e modificare, ricreiamo l'XML con i valori aggiornati
+                        
                         def updatedXml = """<?xml version="1.0" encoding="UTF-8"?>
                     <metadata>
                     <quality-assurance>
@@ -312,10 +312,10 @@ pipeline {
                     </quality-assurance>
                     </metadata>"""
                         
-                        
                         writeFile file: "tmp/metadataFile.xml", text: updatedXml
                         def metadataContent = readFile("tmp/metadataFile.xml")
 
+                        //_---------------------------------------------------
                         def nameFile = env.gitlabGroup + "/" + env.gitlabProject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
                         
                         //branch: master --> cambiare dopo test
