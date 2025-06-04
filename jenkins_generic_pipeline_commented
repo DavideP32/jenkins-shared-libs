@@ -7,9 +7,7 @@ def QA_RESULT = [:]
 pipeline {
     agent any
 
-    /* -------------------------------------------------------------------------- */
-    /*                                  RIMUOVERE                                 */
-    /* -------------------------------------------------------------------------- */
+    //RIMUOVERE!!!
     environment{
         SONAR_IS_UP = 'true'
         SONAR_HOST_URL = 'http://sonarqube:9000'
@@ -42,6 +40,14 @@ pipeline {
                         ]
                 ])
 
+                /*
+                SCRIPT SUCCESSIVO:
+
+                "Prima di investire tempo e risorse in una build completa, assicurati che sia effettivamente necessaria"
+                    - Forza versioning corretto: Solo tag x.y.z-release sono accettati
+                    - Evita sovrascritture accidentali di report
+                    - Mantiene tracciabilità: Ogni versione ha il suo report unico
+                */
 
                 script {
 
@@ -67,9 +73,10 @@ pipeline {
 
                     
                     env.DEFAULT_EXCLUSIONS = defaultExclusions
-                    
+                    //           "Se il commit corrente ha un tag di versione (tipo v1.0.0-release) → è una release"
+                    //           "Se non ha tag → è codice in sviluppo (committato normalmente senza tag)"
                     def tag = sh(
-                            script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', 
+                            script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', //trova il tag se c'è, altrimenti echo vuoto.
                             returnStdout: true
                     ).trim()
 
@@ -78,7 +85,7 @@ pipeline {
                         if (tag ==~ /^\d+\.\d+\.\d+-release$/) {
                             echo "Tag matches the format x.y.z-release."
                             APPLICATION_VERSION = tag.split("-")[0]
-                        } else { 
+                        } else { //qua mettiamo in conto di poter avere un tag anche su dev, ma non sarà appunto -release
                             echo "Tag does NOT match the format x.y.z-release."
                             APPLICATION_VERSION = 'dev'
                         }
@@ -87,35 +94,61 @@ pipeline {
                         APPLICATION_VERSION = 'dev'
                     }
 
-                    if (APPLICATION_VERSION != "dev") {
-                        echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
-                        // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
-                        def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
+                    // if (APPLICATION_VERSION != "dev") {
+                    //     echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
+                    //     // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
+                    //     def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
 
-                        // Effettua la chiamata all'API per verificare la presenza della versione
-                        def response = sh(
-                                script: """curl -k -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "${apiUrl}" """,
-                                returnStdout: true
-                        ).trim()
+                    //     // Effettua la chiamata all'API per verificare la presenza della versione
+                    //     /*
+                    //     •	-k: ignora i certificati SSL non validi (utile se GitLab usa HTTPS con un certificato self-signed).
+                    //     •	-s: silenzioso (non mostra progress bar, messaggi di errore, ecc.).
+                    //     •	-H "PRIVATE-TOKEN: $GITLAB_TOKEN": aggiunge un header HTTP per autenticarsi con token.
+                    //     •	"$apiUrl": è la URL dinamica calcolata prima.
+                    //     */
+                    //     def response = sh(
+                    //             script: """curl -k -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "${apiUrl}" """,
+                    //             returnStdout: true
+                    //     ).trim()
 
 
-                        try {
-                            def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-                            def versionExists = jsonResponse.any { it.type == "tree" && it.name == APPLICATION_VERSION }
-                            if (versionExists) {
-                                error "La versione ${APPLICATION_VERSION} è stata già buildata in precedenza. E' necessario aggiornarla."
-                            } else {
-                                echo "Versione '${APPLICATION_VERSION}."
-                            }
-                        } catch (Exception e) {
-                            echo "Errore durante l'analisi della risposta JSON: ${e.message}"
-                            error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
-                        }
+                        // try {
+                        //     def jsonResponse = new groovy.json.JsonSlurper().parseText(response) //prende la risposta della chiamata api e la parsa a json
+                        //     def versionExists = jsonResponse.any { it.type == "tree" && it.name == APPLICATION_VERSION } //cerca nel JSON se c'è già la versione indicata negli oggetti di tipo 'tree'
+                        //     if (versionExists) {
+                        //         error "La versione ${APPLICATION_VERSION} è stata già buildata in precedenza. E' necessario aggiornarla."
+                        //     } else {
+                        //         echo "Versione '${APPLICATION_VERSION}."
+                        //     }
+                        // } catch (Exception e) {
+                        //     echo "Errore durante l'analisi della risposta JSON: ${e.message}"
+                        //     error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
+                        // }
 
-                    }
+                    //}
                 }
             }
         }
+
+        // stage('Build') {
+        //     steps {
+        //         script {
+        //             def javaHome = tool 'JDK_21.0.3'
+        //             def mavenHome = tool 'Maven3' // Configura il nome del tuo Maven in Jenkins
+                    
+        //             sh """
+        //                 export JAVA_HOME=${javaHome}
+        //                 export PATH=${mavenHome}/bin:${javaHome}/bin:\$PATH
+                        
+        //                 if [ -f "pom.xml" ]; then
+        //                     mvn clean compile
+        //                 else
+        //                     echo "No Maven project found, skipping build"
+        //                 fi
+        //             """
+        //         }
+        //     }
+        // }
 
         stage('QA') {
             steps {
@@ -158,11 +191,19 @@ pipeline {
                     sleep(30)
                     timeout(time: 360, unit: 'SECONDS') {
                         if (env.SONAR_IS_UP == 'true') {
-                            def qg = waitForQualityGate() 
+                            def qg = waitForQualityGate() //Wait for SonarQube analysis to be completed and return quality gate status
                             def branch = env.gitlabBranch
                             branch = branch.replace('/', '-')
                             branch = branch.replace('*', '')
-                           
+                            /*
+                            -X POST	                        invia una richiesta HTTP POST
+                            -u $USERPASS                    invia le credenziali (tipicamente username:token o username:password) per autenticazione basic HTTP
+                            -i	                            include header della risposta HTTP nell’output (es: HTTP/1.1 200 OK)
+                            ${SONAR_URL}	                variabile d'ambiente che contiene l’URL del server SonarQube
+                            api/permissions/apply_template	endpoint API di SonarQube per applicare un template di permessi a un progetto
+                            templateName=...	            nome del template di permessi definito su SonarQube
+                            projectKey=...	                identificatore del progetto su SonarQube, costruito come gruppo-progetto-branch
+                            */
                             withCredentials([usernameColonPassword(credentialsId: 'sonarqube-api-token', variable: 'USERPASS')]) {
                                 //sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabProject + "-" + branch + "'"
                                 sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Default%20template&projectKey=" + env.gitlabProject + "-" + branch + "'"
@@ -243,9 +284,6 @@ pipeline {
                     } else QA_RESULT.put("quality-assurance.esito", "OK")
 
                     if (!APPLICATION_VERSION.equals("dev")) {
-                        /* -------------------------------------------------------------------------- */
-                        /*                                  PROBLEMA                                  */
-                        /* -------------------------------------------------------------------------- */
                         /*
                         def metadataFile = readFile "tmp/metadata.xml"
                         def metadataFileXml = new XmlSlurper(false, false).parseText(metadataFile)
@@ -259,57 +297,53 @@ pipeline {
                         def metadataContent = readFile("tmp/metadataFile.xml")
                         */
 
-                        /* -------------------------------------------------------------------------- */
-                        /*                                  SOLUZIONE                                 */
-                        /* -------------------------------------------------------------------------- */
                         def metadataFile = readFile "tmp/metadata.xml"
     
                         
                         def updatedXml = """<?xml version="1.0" encoding="UTF-8"?>
-                        <metadata>
-                        <quality-assurance>
-                            <esito>${QA_RESULT.get("quality-assurance.esito")}</esito>
-                            <sonarqube>
-                            <esito>${QA_RESULT.get("sonarqube.esito")}</esito>
-                            <report-url>${QA_RESULT.get("sonarqube.report-url")}</report-url>
-                            <description>${QA_RESULT.get("sonarqube.description")}</description>
-                            </sonarqube>
-                        </quality-assurance>
-                        </metadata>"""
+                    <metadata>
+                    <quality-assurance>
+                        <esito>${QA_RESULT.get("quality-assurance.esito")}</esito>
+                        <sonarqube>
+                        <esito>${QA_RESULT.get("sonarqube.esito")}</esito>
+                        <report-url>${QA_RESULT.get("sonarqube.report-url")}</report-url>
+                        <description>${QA_RESULT.get("sonarqube.description")}</description>
+                        </sonarqube>
+                    </quality-assurance>
+                    </metadata>"""
                         
                         writeFile file: "tmp/metadataFile.xml", text: updatedXml
                         def metadataContent = readFile("tmp/metadataFile.xml")
 
-                    //--------------------------------------------------------------------------------
-
-                    def nameFile = env.gitlabGroup + "/" + env.gitlabProject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
-                    
-                    //branch: master --> CAMBIARE 
-                    def payload = """
-                    {
-                        "branch": "main",
-                        "commit_message": "Adding file ${nameFile}.xml",
-                        "actions": [
+                        //_---------------------------------------------------
+                        def nameFile = env.gitlabGroup + "/" + env.gitlabProject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
+                        
+                        //branch: master --> cambiare dopo test
+                        def payload = """
                         {
-                            "action": "create",
-                            "file_path": "${nameFile}.xml",
-                            "content": ${groovy.json.JsonOutput.toJson(metadataContent)}
+                            "branch": "main",
+                            "commit_message": "Adding file ${nameFile}.xml",
+                            "actions": [
+                            {
+                                "action": "create",
+                                "file_path": "${nameFile}.xml",
+                                "content": ${groovy.json.JsonOutput.toJson(metadataContent)}
+                            }
+                            ]
                         }
-                        ]
-                    }
-                    """
+                        """
 
-                    //metto il mio id in hardcode - ELIMINARE
-                    def GITLAB_REPORTS_PROJECT_ID = 70428016
+                        //metto il mio id in hardcode - ELIMINARE
+                        def GITLAB_REPORTS_PROJECT_ID = 70428016
 
-                    sh """
-                        curl -k --request POST --header "PRIVATE-TOKEN: $GITLAB_TOKEN" --header "Content-Type: application/json" \
-                        --data '${payload}' "https://gitlab.com/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/commits"
-                    """
-                    // sh """
-                    //     curl -k --request POST --header "PRIVATE-TOKEN: $GITLAB_TOKEN" --header "Content-Type: application/json" \
-                    //     --data '${payload}' "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/commits"
-                    // """
+                        sh """
+                            curl -k --request POST --header "PRIVATE-TOKEN: $GITLAB_TOKEN" --header "Content-Type: application/json" \
+                            --data '${payload}' "https://gitlab.com/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/commits"
+                        """
+                        // sh """
+                        //     curl -k --request POST --header "PRIVATE-TOKEN: $GITLAB_TOKEN" --header "Content-Type: application/json" \
+                        //     --data '${payload}' "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/commits"
+                        // """
 
                     }
                 }
