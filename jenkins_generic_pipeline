@@ -260,7 +260,7 @@ pipeline {
                             // Crea e serializza immediatamente senza salvare l'oggetto XML
                             writeFile file: "tmp/metadataFile.xml", text: groovy.xml.XmlUtil.serialize(
                                 new XmlSlurper(false, false).parseText(metadataFile).with { xml ->
-                                    xml.'quality-assurance'.esito = QA_RESULT.get("quality-assurance.esito")
+                                    xml.'quality-assurance'.esito = QA_RESULT.get("quality-assurance.esito") + "ciao"
                                     xml.'quality-assurance'.sonarqube.esito = QA_RESULT.get("sonarqube.esito")
                                     xml.'quality-assurance'.sonarqube.'report-url' = QA_RESULT.get("sonarqube.report-url")
                                     xml.'quality-assurance'.sonarqube.description = QA_RESULT.get("sonarqube.description")
