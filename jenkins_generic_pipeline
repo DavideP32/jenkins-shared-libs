@@ -233,6 +233,8 @@ pipeline {
                         QA_RESULT.put("quality-assurance.esito", "KO")
                     } else QA_RESULT.put("quality-assurance.esito", "OK")
 
+                    echo QA_RESULT.toString()
+
                     if (!APPLICATION_VERSION.equals("dev")) {
                         /* -------------------------------------------------------------------------- */
                         /*                                  PROBLEMA                                  */
