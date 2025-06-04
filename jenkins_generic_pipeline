@@ -7,15 +7,7 @@ def QA_RESULT = [:]
 pipeline {
     agent any
 
-    /* -------------------------------------------------------------------------- */
-    /*                                  RIMUOVERE                                 */
-    /* -------------------------------------------------------------------------- */
-    environment{
-        SONAR_IS_UP = 'true'
-        SONAR_HOST_URL = 'http://sonarqube:9000'
-    }
-
-    
+        
     stages{
 
         stage('SCM Checkout') {
@@ -44,29 +36,6 @@ pipeline {
 
 
                 script {
-
-                    def defaultExclusions = [
-                        '**/node_modules/**',
-                        '**/target/**',
-                        '**/build/**',
-                        '**/dist/**',
-                        '**/out/**',
-                        '**/bin/**',
-                        '**/.git/**',
-                        '**/.svn/**',
-                        '**/vendor/**',
-                        '**/coverage/**',
-                        '**/__pycache__/**',
-                        '**/*.pyc',
-                        '**/*.min.js',
-                        '**/logs/**',
-                        '**/.env',
-                        '**/.DS_Store',
-                        '**/thumbs.db'
-                    ].join(',')
-
-                    
-                    env.DEFAULT_EXCLUSIONS = defaultExclusions
                     
                     def tag = sh(
                             script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', 
@@ -120,6 +89,30 @@ pipeline {
         stage('QA') {
             steps {
                 script {
+
+                    def defaultExclusions = [
+                        '**/node_modules/**',
+                        '**/target/**',
+                        '**/build/**',
+                        '**/dist/**',
+                        '**/out/**',
+                        '**/bin/**',
+                        '**/.git/**',
+                        '**/.svn/**',
+                        '**/vendor/**',
+                        '**/coverage/**',
+                        '**/__pycache__/**',
+                        '**/*.pyc',
+                        '**/*.min.js',
+                        '**/logs/**',
+                        '**/.env',
+                        '**/.DS_Store',
+                        '**/thumbs.db'
+                    ].join(',')
+
+                    
+                    env.DEFAULT_EXCLUSIONS = defaultExclusions
+
                     echo "starting QA"
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
@@ -131,9 +124,9 @@ pipeline {
                             branch = branch.replace('/', '-')
                             branch = branch.replace('*', '')
                             if (env.SONAR_IS_UP == 'true') {
-                                //    cd //tmp && \\
-                                sh 'find . -name "*.class"'
+                                
                                 sh """
+                                    cd //tmp && \\
                                     JAVA_HOME=${javaHome} \\
                                     '${scannerHome}/bin/sonar-scanner' \\
                                     -Dsonar.projectBaseDir=${QA_WD} \\
@@ -143,10 +136,8 @@ pipeline {
                                     -Dsonar.sources=. \\
                                     -Dsonar.exclusions='${env.DEFAULT_EXCLUSIONS}' \\
                                     -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
-                                    -Dsonar.login='${env.SONAR_AUTH_TOKEN}' \\
                                     -Dsonar.java.binaries=.
                                 """
-                                //sonar.login è deprecata
                             }
                         }
                     }
@@ -246,7 +237,7 @@ pipeline {
                         /* -------------------------------------------------------------------------- */
                         /*                                  PROBLEMA                                  */
                         /* -------------------------------------------------------------------------- */
-                        /*
+                        
                         def metadataFile = readFile "tmp/metadata.xml"
                         def metadataFileXml = new XmlSlurper(false, false).parseText(metadataFile)
                         //aggiorno i valori del pom classifier
@@ -257,37 +248,36 @@ pipeline {
 
                         writeFile file: "tmp/metadataFile.xml", text: groovy.xml.XmlUtil.serialize(metadataFileXml)
                         def metadataContent = readFile("tmp/metadataFile.xml")
-                        */
+                        
 
                         /* -------------------------------------------------------------------------- */
                         /*                                  SOLUZIONE                                 */
                         /* -------------------------------------------------------------------------- */
-                        def metadataFile = readFile "tmp/metadata.xml"
+                        // def metadataFile = readFile "tmp/metadata.xml"
     
                         
-                        def updatedXml = """<?xml version="1.0" encoding="UTF-8"?>
-                        <metadata>
-                        <quality-assurance>
-                            <esito>${QA_RESULT.get("quality-assurance.esito")}</esito>
-                            <sonarqube>
-                            <esito>${QA_RESULT.get("sonarqube.esito")}</esito>
-                            <report-url>${QA_RESULT.get("sonarqube.report-url")}</report-url>
-                            <description>${QA_RESULT.get("sonarqube.description")}</description>
-                            </sonarqube>
-                        </quality-assurance>
-                        </metadata>"""
+                        // def updatedXml = """<?xml version="1.0" encoding="UTF-8"?>
+                        // <metadata>
+                        // <quality-assurance>
+                        //     <esito>${QA_RESULT.get("quality-assurance.esito")}</esito>
+                        //     <sonarqube>
+                        //     <esito>${QA_RESULT.get("sonarqube.esito")}</esito>
+                        //     <report-url>${QA_RESULT.get("sonarqube.report-url")}</report-url>
+                        //     <description>${QA_RESULT.get("sonarqube.description")}</description>
+                        //     </sonarqube>
+                        // </quality-assurance>
+                        // </metadata>"""
                         
-                        writeFile file: "tmp/metadataFile.xml", text: updatedXml
-                        def metadataContent = readFile("tmp/metadataFile.xml")
+                        // writeFile file: "tmp/metadataFile.xml", text: updatedXml
+                        // def metadataContent = readFile("tmp/metadataFile.xml")
 
                     //--------------------------------------------------------------------------------
 
                     def nameFile = env.gitlabGroup + "/" + env.gitlabProject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
                     
-                    //branch: master --> CAMBIARE 
                     def payload = """
                     {
-                        "branch": "main",
+                        "branch": "master",
                         "commit_message": "Adding file ${nameFile}.xml",
                         "actions": [
                         {
