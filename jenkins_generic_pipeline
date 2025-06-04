@@ -146,7 +146,7 @@ pipeline {
                 script {
                     def SONAR_URL = env.SONAR_HOST_URL
                     def QA_WD = pwd()
-                    sleep(30)
+                    sleep(5) //....
                     timeout(time: 360, unit: 'SECONDS') {
                         if (env.SONAR_IS_UP == 'true') {
                             def qg = waitForQualityGate() 
