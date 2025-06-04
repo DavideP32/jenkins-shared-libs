@@ -226,7 +226,7 @@ pipeline {
                     dir("tmp") {
                         checkout([
                             $class                           : 'GitSCM',
-                            branches                         : [[name: 'main']], //[[name: "master"]],
+                            branches                         : [[name: "master"]],
                             doGenerateSubmoduleConfigurations: false,
                             extensions                       : [],
                             submoduleCfg                     : [],
