@@ -244,10 +244,10 @@ pipeline {
                         def metadataFile = readFile "tmp/metadata.xml"
                         def metadataFileXml = new XmlSlurper(false, false).parseText(metadataFile)
                         //aggiorno i valori del pom classifier
-                        metadataFileXml.'quality-assurance'.esito = QA_RESULT.get("quality-assurance.esito")
-                        metadataFileXml.'quality-assurance'.sonarqube.esito = QA_RESULT.get("sonarqube.esito")
-                        metadataFileXml.'quality-assurance'.sonarqube.'report-url' = QA_RESULT.get("sonarqube.report-url")
-                        metadataFileXml.'quality-assurance'.sonarqube.description = QA_RESULT.get("sonarqube.description")
+                        // metadataFileXml.'quality-assurance'.esito = QA_RESULT.get("quality-assurance.esito")
+                        // metadataFileXml.'quality-assurance'.sonarqube.esito = QA_RESULT.get("sonarqube.esito")
+                        // metadataFileXml.'quality-assurance'.sonarqube.'report-url' = QA_RESULT.get("sonarqube.report-url")
+                        // metadataFileXml.'quality-assurance'.sonarqube.description = QA_RESULT.get("sonarqube.description")
 
                         writeFile file: "tmp/metadataFile.xml", text: groovy.xml.XmlUtil.serialize(metadataFileXml)
                         def metadataContent = readFile("tmp/metadataFile.xml")
