@@ -92,7 +92,7 @@ pipeline {
 
                     def defaultExclusions = [
                         '**/node_modules/**',
-                        '**/target/**',
+                        //'**/target/**',
                         '**/build/**',
                         '**/dist/**',
                         '**/out/**',
@@ -270,30 +270,8 @@ pipeline {
                             
                             metadataContent = readFile("tmp/metadataFile.xml")
                         }
-                        
+                    }    
 
-                        /* -------------------------------------------------------------------------- */
-                        /*                                  SOLUZIONE                                 */
-                        /* -------------------------------------------------------------------------- */
-                        // def metadataFile = readFile "tmp/metadata.xml"
-    
-                        
-                        // def updatedXml = """<?xml version="1.0" encoding="UTF-8"?>
-                        // <metadata>
-                        // <quality-assurance>
-                        //     <esito>${QA_RESULT.get("quality-assurance.esito")}</esito>
-                        //     <sonarqube>
-                        //     <esito>${QA_RESULT.get("sonarqube.esito")}</esito>
-                        //     <report-url>${QA_RESULT.get("sonarqube.report-url")}</report-url>
-                        //     <description>${QA_RESULT.get("sonarqube.description")}</description>
-                        //     </sonarqube>
-                        // </quality-assurance>
-                        // </metadata>"""
-                        
-                        // writeFile file: "tmp/metadataFile.xml", text: updatedXml
-                        // def metadataContent = readFile("tmp/metadataFile.xml")
-
-                    //--------------------------------------------------------------------------------
 
                     def nameFile = env.gitlabGroup + "/" + env.gitlabProject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
                     
