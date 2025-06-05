@@ -35,182 +35,191 @@ pipeline {
                 ])
 
 
-                script {
-                    
-                    def tag = sh(
-                            script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', 
-                            returnStdout: true
-                    ).trim()
+                
+            }
+        }
 
-                    if (tag) {
-                        echo "The current commit has a tag: ${tag}"
-                        if (tag ==~ /^\d+\.\d+\.\d+-release$/) {
-                            echo "Tag matches the format x.y.z-release."
-                            APPLICATION_VERSION = tag.split("-")[0]
-                        } else { 
-                            echo "Tag does NOT match the format x.y.z-release."
-                            APPLICATION_VERSION = 'dev'
-                        }
-                    } else {
-                        echo "There is no tag."
+        stage('Version Check'){
+            script {
+                def tag = sh(
+                        script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', 
+                        returnStdout: true
+                ).trim()
+
+                if (tag) {
+                    echo "The current commit has a tag: ${tag}"
+                    if (tag ==~ /^\d+\.\d+\.\d+-release$/) {
+                        echo "Tag matches the format x.y.z-release."
+                        APPLICATION_VERSION = tag.split("-")[0]
+                    } else { 
+                        echo "Tag does NOT match the format x.y.z-release."
                         APPLICATION_VERSION = 'dev'
                     }
-
-                    // if (APPLICATION_VERSION != "dev") {
-                    //     echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
-                    //     // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
-                    //     def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
-
-                    //     // Effettua la chiamata all'API per verificare la presenza della versione
-                    //     def response = sh(
-                    //             script: """curl -k -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "${apiUrl}" """,
-                    //             returnStdout: true
-                    //     ).trim()
-
-
-                    //     try {
-                    //         def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-                    //         def versionExists = jsonResponse.any { it.type == "tree" && it.name == APPLICATION_VERSION }
-                    //         if (versionExists) {
-                    //             error "La versione ${APPLICATION_VERSION} è stata già buildata in precedenza. E' necessario aggiornarla."
-                    //         } else {
-                    //             echo "Versione '${APPLICATION_VERSION}."
-                    //         }
-                    //     } catch (Exception e) {
-                    //         echo "Errore durante l'analisi della risposta JSON: ${e.message}"
-                    //         error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
-                    //     }
-
-                    // }
+                } else {
+                    echo "There is no tag."
+                    APPLICATION_VERSION = 'dev'
                 }
-            }
+
+                // if (APPLICATION_VERSION != "dev") {
+                //     echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
+                //     // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
+                //     def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
+
+                //     // Effettua la chiamata all'API per verificare la presenza della versione
+                //     def response = sh(
+                //             script: """curl -k -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "${apiUrl}" """,
+                //             returnStdout: true
+                //     ).trim()
+
+
+                //     try {
+                //         def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
+                //         def versionExists = jsonResponse.any { it.type == "tree" && it.name == APPLICATION_VERSION }
+                //         if (versionExists) {
+                //             error "La versione ${APPLICATION_VERSION} è stata già buildata in precedenza. E' necessario aggiornarla."
+                //         } else {
+                //             echo "Versione '${APPLICATION_VERSION}."
+                //         }
+                //     } catch (Exception e) {
+                //         echo "Errore durante l'analisi della risposta JSON: ${e.message}"
+                //         error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
+                //     }
+
+                // }
+                }
         }
 
         stage('QA') {
             steps {
-                script {
 
-                    def defaultExclusions = [
-                        '**/node_modules/**',
-                        //'**/target/**',
-                        '**/build/**',
-                        '**/dist/**',
-                        '**/out/**',
-                        '**/bin/**',
-                        '**/.git/**',
-                        '**/.svn/**',
-                        '**/vendor/**',
-                        '**/coverage/**',
-                        '**/__pycache__/**',
-                        '**/*.pyc',
-                        '**/*.min.js',
-                        '**/logs/**',
-                        '**/.env',
-                        '**/.DS_Store',
-                        '**/thumbs.db'
-                    ].join(',')
+                QA_RESULT = qaSonar gitlabUrl: env.gitlabUrl,
+                        gitlabGroup: env.gitlabGroup,
+                        gitlabPproject: env.gitlabPproject,
+                        gitlabBranch: env.gitlabBranch,
+
+                // script {
+
+                //     def defaultExclusions = [
+                //         '**/node_modules/**',
+                //         //'**/target/**',
+                //         '**/build/**',
+                //         '**/dist/**',
+                //         '**/out/**',
+                //         '**/bin/**',
+                //         '**/.git/**',
+                //         '**/.svn/**',
+                //         '**/vendor/**',
+                //         '**/coverage/**',
+                //         '**/__pycache__/**',
+                //         '**/*.pyc',
+                //         '**/*.min.js',
+                //         '**/logs/**',
+                //         '**/.env',
+                //         '**/.DS_Store',
+                //         '**/thumbs.db'
+                //     ].join(',')
 
                     
-                    env.DEFAULT_EXCLUSIONS = defaultExclusions
+                //     env.DEFAULT_EXCLUSIONS = defaultExclusions
 
-                    echo "starting QA"
+                //     echo "starting QA"
 
-                    // Se è un progetto Maven, prova a compilare prima
-                    if (fileExists('pom.xml')) {
-                        def mvnHome = tool 'Maven3'
-                        sh "${mvnHome}/bin/mvn clean compile"
-                    }
+                //     // Se è un progetto Maven, prova a compilare prima
+                //     // if (fileExists('pom.xml')) {
+                //     //     def mvnHome = tool 'Maven3'
+                //     //     sh "${mvnHome}/bin/mvn clean compile"
+                //     // }
             
 
-                    withSonarQubeEnv('SonarQubeNumera') {
-                        script {
-                            def QA_WD = pwd()
-                            def SONAR_URL = env.SONAR_HOST_URL
-                            def scannerHome = tool 'sonarQubeScanner4'
-                            def javaHome = tool 'JDK_21.0.3'
-                            def branch = env.gitlabBranch
-                            branch = branch.replace('/', '-')
-                            branch = branch.replace('*', '')
-                            if (env.SONAR_IS_UP == 'true') {
+                //     withSonarQubeEnv('SonarQubeNumera') {
+                //         script {
+                //             def QA_WD = pwd()
+                //             def SONAR_URL = env.SONAR_HOST_URL
+                //             def scannerHome = tool 'sonarQubeScanner4'
+                //             def javaHome = tool 'JDK_21.0.3'
+                //             def branch = env.gitlabBranch
+                //             branch = branch.replace('/', '-')
+                //             branch = branch.replace('*', '')
+                //             if (env.SONAR_IS_UP == 'true') {
                                 
-                                sh """
-                                    cd //tmp && \\
-                                    JAVA_HOME=${javaHome} \\
-                                    '${scannerHome}/bin/sonar-scanner' \\
-                                    -Dsonar.projectBaseDir=${QA_WD} \\
-                                    -Dsonar.projectKey=${env.gitlabProject}-${branch} \\
-                                    -Dsonar.projectName=${env.gitlabProject}-${branch} \\
-                                    -Dsonar.projectVersion='${APPLICATION_VERSION}' \\
-                                    -Dsonar.sources=. \\
-                                    -Dsonar.exclusions='${env.DEFAULT_EXCLUSIONS}' \\
-                                    -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
-                                    -Dsonar.java.binaries=.
-                                """
-                            }
-                        }
-                    }
-                }
+                //                 sh """
+                //                     cd //tmp && \\
+                //                     JAVA_HOME=${javaHome} \\
+                //                     '${scannerHome}/bin/sonar-scanner' \\
+                //                     -Dsonar.projectBaseDir=${QA_WD} \\
+                //                     -Dsonar.projectKey=${env.gitlabProject}-${branch} \\
+                //                     -Dsonar.projectName=${env.gitlabProject}-${branch} \\
+                //                     -Dsonar.projectVersion='${APPLICATION_VERSION}' \\
+                //                     -Dsonar.sources=. \\
+                //                     -Dsonar.exclusions='${env.DEFAULT_EXCLUSIONS}' \\
+                //                     -Dsonar.host.url='${env.SONAR_HOST_URL}' \\
+                //                     -Dsonar.java.binaries=.
+                //                 """
+                //             }
+                //         }
+                //     }
+                // }
 
-                script {
-                    def SONAR_URL = env.SONAR_HOST_URL
-                    def QA_WD = pwd()
-                    sleep(5) //....
-                    timeout(time: 360, unit: 'SECONDS') {
-                        if (env.SONAR_IS_UP == 'true') {
-                            def qg = waitForQualityGate() 
-                            def branch = env.gitlabBranch
-                            branch = branch.replace('/', '-')
-                            branch = branch.replace('*', '')
+                // script {
+                //     def SONAR_URL = env.SONAR_HOST_URL
+                //     def QA_WD = pwd()
+                //     sleep(30) //....
+                //     timeout(time: 360, unit: 'SECONDS') {
+                //         if (env.SONAR_IS_UP == 'true') {
+                //             def qg = waitForQualityGate() 
+                //             def branch = env.gitlabBranch
+                //             branch = branch.replace('/', '-')
+                //             branch = branch.replace('*', '')
                            
-                            withCredentials([usernameColonPassword(credentialsId: 'sonarqube-api-token', variable: 'USERPASS')]) {
-                                //sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabProject + "-" + branch + "'"
-                                sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Default%20template&projectKey=" + env.gitlabProject + "-" + branch + "'"
-                                echo 'Configurato permission template per il project sonar'
+                //             withCredentials([usernameColonPassword(credentialsId: 'sonarqube-api-token', variable: 'USERPASS')]) {
+                //                 //sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabProject + "-" + branch + "'"
+                //                 sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Default%20template&projectKey=" + env.gitlabProject + "-" + branch + "'"
+                //                 echo 'Configurato permission template per il project sonar'
 
 
-                                //estrazione coverage da sonar
-                                sh "curl --fail -s -L -X GET -u $USERPASS '$SONAR_URL/api/measures/component?component=${env.gitlabProject}-${branch}&metricKeys=coverage,sqale_debt_ratio' -o sonar_measures.json"
-                                def coverageFile = readFile "sonar_measures.json"
-                                def coverageJson = new JsonSlurper().parseText(coverageFile)
-                                Float coverage = 0
-                                Float techDeb = 0
-                                Float securityRating = 0
+                //                 //estrazione coverage da sonar
+                //                 sh "curl --fail -s -L -X GET -u $USERPASS '$SONAR_URL/api/measures/component?component=${env.gitlabProject}-${branch}&metricKeys=coverage,sqale_debt_ratio' -o sonar_measures.json"
+                //                 def coverageFile = readFile "sonar_measures.json"
+                //                 def coverageJson = new JsonSlurper().parseText(coverageFile)
+                //                 Float coverage = 0
+                //                 Float techDeb = 0
+                //                 Float securityRating = 0
 
-                                coverageJson.component.measures.each {
-                                    if (it.metric == "coverage" && it.value) coverage = it.value.toFloat()
-                                    if (it.metric == "sqale_debt_ratio" && it.value) techDeb = it.value.toFloat()
-                                    if (it.metric == "security_rating" && it.value) securityRating = it.value.toFloat()
-                                }
+                //                 coverageJson.component.measures.each {
+                //                     if (it.metric == "coverage" && it.value) coverage = it.value.toFloat()
+                //                     if (it.metric == "sqale_debt_ratio" && it.value) techDeb = it.value.toFloat()
+                //                     if (it.metric == "security_rating" && it.value) securityRating = it.value.toFloat()
+                //                 }
 
-                                //aggiungo l'url della dashboard sonar alla mappa
-                                QA_RESULT.put("sonarqube.report-url", "$SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
-                                //aggiungo l'esito dell'analisi Sonar
-                                //rendo sonarQUBE non bloccante, il primo KO diventa OK
-                                QA_RESULT.put("sonarqube.esito", env.SONAR_IS_BLOCKING != 'false' && qg.status != 'OK' && qg.status != 'WARN' ? "KO" : "OK")
-                                //aggiungo la descrizione per sonar
-                                QA_RESULT.put("sonarqube.description", "Coverage del progetto: " + coverage + "\ndebito tecnico: " + techDeb + "\nsecurity rating: " + securityRating)
-                            }
+                //                 //aggiungo l'url della dashboard sonar alla mappa
+                //                 QA_RESULT.put("sonarqube.report-url", "$SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
+                //                 //aggiungo l'esito dell'analisi Sonar
+                //                 //rendo sonarQUBE non bloccante, il primo KO diventa OK
+                //                 QA_RESULT.put("sonarqube.esito", env.SONAR_IS_BLOCKING != 'false' && qg.status != 'OK' && qg.status != 'WARN' ? "KO" : "OK")
+                //                 //aggiungo la descrizione per sonar
+                //                 QA_RESULT.put("sonarqube.description", "Coverage del progetto: " + coverage + "\ndebito tecnico: " + techDeb + "\nsecurity rating: " + securityRating)
+                //             }
 
-                            if (qg.status != 'OK' && qg.status != 'WARN') {
-                                echo("Pipeline in errore a causa del Quality Gate impostato su Sonar. Status: ${qg.status}. Controllare la link $SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
-                                echo(QA_RESULT["sonarqube.description"])
-                                currentBuild.result = 'UNSTABLE'
-                            }
-                        } else {
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //             if (qg.status != 'OK' && qg.status != 'WARN') {
+                //                 echo("Pipeline in errore a causa del Quality Gate impostato su Sonar. Status: ${qg.status}. Controllare la link $SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
+                //                 echo(QA_RESULT["sonarqube.description"])
+                //                 currentBuild.result = 'UNSTABLE'
+                //             }
+                //         } else {
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 
-                            echo 'ATTENZIONE VERIFICA QUALITY GATE SONAR NON ATTIVO Variabile ambiente env.SONAR_IS_UP ' + env.SONAR_IS_UP
+                //             echo 'ATTENZIONE VERIFICA QUALITY GATE SONAR NON ATTIVO Variabile ambiente env.SONAR_IS_UP ' + env.SONAR_IS_UP
 
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-                            echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-                        }
-                    }
-                }
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //             echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                //         }
+                //     }
+                // }
             }
         }
 
