@@ -128,7 +128,6 @@ pipeline {
                                 sh """
                                     cd //tmp && \\
                                     JAVA_HOME=${javaHome} \\
-                                    mvn clean compile sonar:sonar \\
                                     '${scannerHome}/bin/sonar-scanner' \\
                                     -Dsonar.projectBaseDir=${QA_WD} \\
                                     -Dsonar.projectKey=${env.gitlabProject}-${branch} \\
