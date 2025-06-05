@@ -8,6 +8,7 @@ def call(Map config){
     def branch = config.gitlabBranch.replace('/', '-').replace('*', '')
     def gitlabPproject = config.gitlabPproject
     def javaHome = tool 'JDK_21.0.3'
+    def APPLICATION_VERSION = config.APPLICATION_VERSION
 
 
     def defaultExclusions = [
