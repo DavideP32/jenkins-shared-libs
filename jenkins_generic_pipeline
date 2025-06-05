@@ -3,6 +3,7 @@ import groovy.json.JsonSlurper
 
 def QA_RESULT = [:]
 
+@Library('shared-library') _
 
 pipeline {
     agent any
