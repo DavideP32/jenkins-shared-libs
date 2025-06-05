@@ -128,6 +128,7 @@ pipeline {
                                 sh """
                                     cd //tmp && \\
                                     JAVA_HOME=${javaHome} \\
+                                    mvn clean compile sonar:sonar \\
                                     '${scannerHome}/bin/sonar-scanner' \\
                                     -Dsonar.projectBaseDir=${QA_WD} \\
                                     -Dsonar.projectKey=${env.gitlabProject}-${branch} \\
@@ -241,7 +242,7 @@ pipeline {
                     def metadataContent = null
 
                     if (!APPLICATION_VERSION.equals("dev")) {
-                        
+
                         def metadataFile = readFile "tmp/metadata.xml"
                         
                         // Crea e serializza immediatamente senza salvare l'oggetto XML
