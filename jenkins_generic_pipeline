@@ -29,7 +29,7 @@ pipeline {
                         userRemoteConfigs                : [
                                 [
                                         credentialsId: '0ce2d803-fcc5-4faf-b45f-5fca9f59ffd8',
-                                        url          : env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabProject + ".git"
+                                        url          : env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
                                 ]
                         ]
                 ])
@@ -64,7 +64,7 @@ pipeline {
                     // if (APPLICATION_VERSION != "dev") {
                     //     echo "Controllo se la versione ${APPLICATION_VERSION} è presente nei nomi delle cartelle."
                     //     // Chiamata API GitLab per ottenere la lista dei file e delle cartelle
-                    //     def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabProject}/&ref=master"
+                    //     def apiUrl = "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/tree?path=${env.gitlabGroup}/${env.gitlabPproject}/&ref=master"
 
                     //     // Effettua la chiamata all'API per verificare la presenza della versione
                     //     def response = sh(
@@ -150,8 +150,8 @@ pipeline {
                 //                     JAVA_HOME=${javaHome} \\
                 //                     '${scannerHome}/bin/sonar-scanner' \\
                 //                     -Dsonar.projectBaseDir=${QA_WD} \\
-                //                     -Dsonar.projectKey=${env.gitlabProject}-${branch} \\
-                //                     -Dsonar.projectName=${env.gitlabProject}-${branch} \\
+                //                     -Dsonar.projectKey=${env.gitlabPproject}-${branch} \\
+                //                     -Dsonar.projectName=${env.gitlabPproject}-${branch} \\
                 //                     -Dsonar.projectVersion='${APPLICATION_VERSION}' \\
                 //                     -Dsonar.sources=. \\
                 //                     -Dsonar.exclusions='${env.DEFAULT_EXCLUSIONS}' \\
@@ -175,13 +175,13 @@ pipeline {
                 //             branch = branch.replace('*', '')
                            
                 //             withCredentials([usernameColonPassword(credentialsId: 'sonarqube-api-token', variable: 'USERPASS')]) {
-                //                 //sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabProject + "-" + branch + "'"
-                //                 sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Default%20template&projectKey=" + env.gitlabProject + "-" + branch + "'"
+                //                 //sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + env.gitlabGroup + "&projectKey=" + env.gitlabPproject + "-" + branch + "'"
+                //                 sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Default%20template&projectKey=" + env.gitlabPproject + "-" + branch + "'"
                 //                 echo 'Configurato permission template per il project sonar'
 
 
                 //                 //estrazione coverage da sonar
-                //                 sh "curl --fail -s -L -X GET -u $USERPASS '$SONAR_URL/api/measures/component?component=${env.gitlabProject}-${branch}&metricKeys=coverage,sqale_debt_ratio' -o sonar_measures.json"
+                //                 sh "curl --fail -s -L -X GET -u $USERPASS '$SONAR_URL/api/measures/component?component=${env.gitlabPproject}-${branch}&metricKeys=coverage,sqale_debt_ratio' -o sonar_measures.json"
                 //                 def coverageFile = readFile "sonar_measures.json"
                 //                 def coverageJson = new JsonSlurper().parseText(coverageFile)
                 //                 Float coverage = 0
@@ -195,7 +195,7 @@ pipeline {
                 //                 }
 
                 //                 //aggiungo l'url della dashboard sonar alla mappa
-                //                 QA_RESULT.put("sonarqube.report-url", "$SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
+                //                 QA_RESULT.put("sonarqube.report-url", "$SONAR_URL/dashboard?id=" + env.gitlabPproject + "-" + branch)
                 //                 //aggiungo l'esito dell'analisi Sonar
                 //                 //rendo sonarQUBE non bloccante, il primo KO diventa OK
                 //                 QA_RESULT.put("sonarqube.esito", env.SONAR_IS_BLOCKING != 'false' && qg.status != 'OK' && qg.status != 'WARN' ? "KO" : "OK")
@@ -204,7 +204,7 @@ pipeline {
                 //             }
 
                 //             if (qg.status != 'OK' && qg.status != 'WARN') {
-                //                 echo("Pipeline in errore a causa del Quality Gate impostato su Sonar. Status: ${qg.status}. Controllare la link $SONAR_URL/dashboard?id=" + env.gitlabProject + "-" + branch)
+                //                 echo("Pipeline in errore a causa del Quality Gate impostato su Sonar. Status: ${qg.status}. Controllare la link $SONAR_URL/dashboard?id=" + env.gitlabPproject + "-" + branch)
                 //                 echo(QA_RESULT["sonarqube.description"])
                 //                 currentBuild.result = 'UNSTABLE'
                 //             }
@@ -280,7 +280,7 @@ pipeline {
                     }    
 
 
-                    def nameFile = env.gitlabGroup + "/" + env.gitlabProject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
+                    def nameFile = env.gitlabGroup + "/" + env.gitlabPproject + "/" + APPLICATION_VERSION + "/QG" + QA_RESULT.get("quality-assurance.esito") + "_report"
                     
                     def payload = """
                     {
