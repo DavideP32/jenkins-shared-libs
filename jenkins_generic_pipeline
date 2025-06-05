@@ -23,7 +23,7 @@ pipeline {
                 script {
                     sh 'rm -rf -- ..?* .[!.]* *'
                 }
-                checkout checkout_url: env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
+                repoCheckout checkoutUrl: env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
                 
             }
         }
@@ -99,7 +99,7 @@ pipeline {
 
                 script {
                     dir("tmp") {
-                        checkout checkout_url: 'https://gitlab.com/Dev1833023/pipeline-build.git' //"http://172.16.63.237/Devops/pipeline-build.git"
+                        repoCheckout checkoutUrl: 'https://gitlab.com/Dev1833023/pipeline-build.git' //"http://172.16.63.237/Devops/pipeline-build.git"
                     }
 
                     pushQG(

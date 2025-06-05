@@ -1,5 +1,5 @@
 def call(Map config){
-    def checkout_url = config.checkout_url
+    def checkoutUrl = config.checkoutUrl
 
     checkout([
         $class                           : 'GitSCM',
