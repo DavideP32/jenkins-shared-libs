@@ -97,7 +97,7 @@ pipeline {
                     QA_RESULT = qaSonar gitlabUrl: env.gitlabUrl,
                             gitlabGroup: env.gitlabGroup,
                             gitlabPproject: env.gitlabPproject,
-                            gitlabBranch: env.gitlabBranch,
+                            gitlabBranch: env.gitlabBranch
                 }
 
                 // script {
