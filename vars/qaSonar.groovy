@@ -2,7 +2,7 @@ import groovy.json.JsonSlurper
 
 def call(Map config){
     def QA_RESULT = [:]
-    def SONAR_URL = "http://172.16.63.242:9000"
+    def SONAR_URL = env.SONAR_HOST_URL //"http://172.16.63.242:9000"
     def scannerHome = tool 'sonarQubeScanner4'
     def QA_WD = pwd()
     def branch = config.gitlabBranch.replace('/', '-').replace('*', '')
