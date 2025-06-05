@@ -117,7 +117,7 @@ pipeline {
 
                     // Se è un progetto Maven, prova a compilare prima
                     if (fileExists('pom.xml')) {
-                        def mvnHome = tool 'Maven'
+                        def mvnHome = tool 'Maven3'
                         sh "${mvnHome}/bin/mvn clean compile"
                     }
             
