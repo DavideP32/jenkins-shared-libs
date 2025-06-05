@@ -114,6 +114,14 @@ pipeline {
                     env.DEFAULT_EXCLUSIONS = defaultExclusions
 
                     echo "starting QA"
+
+                    // Se è un progetto Maven, prova a compilare prima
+                    if (fileExists('pom.xml')) {
+                        def mvnHome = tool 'Maven'
+                        sh "${mvnHome}/bin/mvn clean compile"
+                    }
+            
+
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
                             def QA_WD = pwd()
