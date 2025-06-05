@@ -92,10 +92,12 @@ pipeline {
         stage('QA') {
             steps {
 
-                QA_RESULT = qaSonar gitlabUrl: env.gitlabUrl,
-                        gitlabGroup: env.gitlabGroup,
-                        gitlabPproject: env.gitlabPproject,
-                        gitlabBranch: env.gitlabBranch,
+                script{
+                    QA_RESULT = qaSonar gitlabUrl: env.gitlabUrl,
+                            gitlabGroup: env.gitlabGroup,
+                            gitlabPproject: env.gitlabPproject,
+                            gitlabBranch: env.gitlabBranch,
+                }
 
                 // script {
 
