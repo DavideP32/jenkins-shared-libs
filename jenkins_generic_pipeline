@@ -301,7 +301,8 @@ pipeline {
                     //     --data '${payload}' "https://gitlab-bper.gbbper.priv/api/v4/projects/${GITLAB_REPORTS_PROJECT_ID}/repository/commits"
                     // """
 
-                    }
+                
+                    
                 }
             }
         }
