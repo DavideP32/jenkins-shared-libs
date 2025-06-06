@@ -1,4 +1,8 @@
 def call(Map config){
+    CHECKOUT_WD = pwd()
+
+    sh "cd $CHECKOUT_WD"// && sudo rm -rf -- ..?* .[!.]* *"
+    echo "$CHECKOUT_WD"
     def checkoutUrl = config.checkoutUrl
 
     checkout([

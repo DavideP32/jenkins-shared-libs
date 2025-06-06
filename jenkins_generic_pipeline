@@ -29,25 +29,25 @@ pipeline {
             }
         }
 
-        stage('Version Check'){
-            steps{
-                script {
-                    APPLICATION_VERSION = versionCheck GITLAB_REPORTS_PROJECT_ID: GITLAB_REPORTS_PROJECT_ID
-                }
-            }
-        }
+        // stage('Version Check'){
+        //     steps{
+        //         script {
+        //             APPLICATION_VERSION = versionCheck GITLAB_REPORTS_PROJECT_ID: GITLAB_REPORTS_PROJECT_ID
+        //         }
+        //     }
+        // }
 
-        stage('QA') {
-            steps {
-                script{
-                    QA_RESULT = qaSonar gitlabUrl: env.gitlabUrl,
-                            gitlabGroup: env.gitlabGroup,
-                            gitlabPproject: env.gitlabPproject,
-                            gitlabBranch: env.gitlabBranch,
-                            APPLICATION_VERSION: APPLICATION_VERSION
-                }
-            }
-        }
+        // stage('QA') {
+        //     steps {
+        //         script{
+        //             QA_RESULT = qaSonar gitlabUrl: env.gitlabUrl,
+        //                     gitlabGroup: env.gitlabGroup,
+        //                     gitlabPproject: env.gitlabPproject,
+        //                     gitlabBranch: env.gitlabBranch,
+        //                     APPLICATION_VERSION: APPLICATION_VERSION
+        //         }
+        //     }
+        // }
 
         stage('Push QG Result') {
             
@@ -59,11 +59,11 @@ pipeline {
                         repoCheckout checkoutUrl: 'https://gitlab.com/Dev1833023/pipeline-build.git' //"http://172.16.63.237/Devops/pipeline-build.git"
                     }
 
-                    pushQG(
-                        QA_RESULT: QA_RESULT,
-                        APPLICATION_VERSION: APPLICATION_VERSION,
-                        GITLAB_REPORTS_PROJECT_ID: GITLAB_REPORTS_PROJECT_ID
-                    )
+                    // pushQG(
+                    //     QA_RESULT: QA_RESULT,
+                    //     APPLICATION_VERSION: APPLICATION_VERSION,
+                    //     GITLAB_REPORTS_PROJECT_ID: GITLAB_REPORTS_PROJECT_ID
+                    // )
                 }
             }
         }
