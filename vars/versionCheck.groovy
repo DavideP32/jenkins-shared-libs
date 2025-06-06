@@ -1,6 +1,6 @@
 def call (Map config){
-
     def GITLAB_REPORTS_PROJECT_ID = config.GITLAB_REPORTS_PROJECT_ID
+    def APPLICATION_VERSION = 'dev'
 
     def tag = sh(
             script: 'git describe --exact-match --tags $(git rev-parse HEAD) || echo ""', 
@@ -46,6 +46,7 @@ def call (Map config){
             error("Interrotto a causa di un errore nell'elaborazione della risposta JSON.")
         }
 
-        return APPLICATION_VERSION
     }
+    
+    return APPLICATION_VERSION
 }

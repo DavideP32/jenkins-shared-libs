@@ -32,7 +32,7 @@ pipeline {
         stage('Version Check'){
             steps{
                 script {
-                    APPLICATION_VERSION = versionCheck GITLAB_REPORTS_PROJECT_ID
+                    APPLICATION_VERSION = versionCheck GITLAB_REPORTS_PROJECT_ID: GITLAB_REPORTS_PROJECT_ID
                 }
             }
         }

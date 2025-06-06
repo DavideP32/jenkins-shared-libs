@@ -5,8 +5,10 @@ def call(Map config){
     def SONAR_URL = env.SONAR_HOST_URL //"http://172.16.63.242:9000"
     def scannerHome = tool 'sonarQubeScanner4'
     def QA_WD = pwd()
-    def branch = config.gitlabBranch.replace('/', '-').replace('*', '')
+    def gitlabUrl = config.gitlabUrl
     def gitlabPproject = config.gitlabPproject
+    def gitlabGroup = config.gitlabGroup
+    def branch = config.gitlabBranch.replace('/', '-').replace('*', '')
     def javaHome = tool 'JDK_21.0.3'
     def APPLICATION_VERSION = config.APPLICATION_VERSION
 
