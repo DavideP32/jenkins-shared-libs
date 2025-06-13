@@ -104,8 +104,8 @@ pipeline{
                             if (env.SONAR_IS_UP == 'true') {
                                 echo "=== Verifica SonarScanner for .NET ==="
                                 // *** Combinare l'installazione e l'export PATH con i comandi sonarscanner ***
+                                sh "dotnet tool install --global dotnet-sonarscanner"
                                 sh """
-                                    dotnet tool install --global dotnet-sonarscanner
                                     export PATH="\$PATH:/tmp/.dotnet/tools"
 
                                     dotnet sonarscanner --version || echo 'sonarscanner for .net non trovato
