@@ -112,14 +112,13 @@ pipeline{
                                 echo "=== Verifica SonarScanner for .NET ==="
                                 // *** Combinare l'installazione e l'export PATH con i comandi sonarscanner ***
                                 sh "dotnet tool install --global dotnet-sonarscanner"
-                                sh """
-                                    export PATH="\$PATH:/tmp/.dotnet/tools"
+                                sh "export PATH='\$PATH:/tmp/.dotnet/tools'"
 
-                                    dotnet sonarscanner --version
-                                    dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' -d:sonar.projectVersion='${APPLICATION_VERSION}'
-                                    dotnet build '${projectFile}'
-                                    dotnet sonarscanner end
-                                """
+                                sh "dotnet sonarscanner --version"
+                                sh "dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' -d:sonar.projectVersion='${APPLICATION_VERSION}'"
+                                sh "dotnet build '${projectFile}'"
+                                sh "dotnet sonarscanner end"
+
                                         
                                 // -d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
                                 // -d:sonar.coverage.exclusions="**Test*.cs"
