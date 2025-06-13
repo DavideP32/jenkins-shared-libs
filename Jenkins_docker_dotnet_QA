@@ -8,7 +8,7 @@ def gitlabGroup = env.gitlabGroup
 def branch = env.gitlabBranch.replace('/', '-').replace('*', '')
 def AGENTS_LIST = (env.SLAVE1_DISABLED=='true'?'':'jenkins-slave-1')
 def dotNetVersion = env.dotNetVersion
-def projectFile = ''
+def projectFile
 def APPLICATION_VERSION = ''
 def GITLAB_REPORTS_PROJECT_ID = 70428016 //375
 def SONAR_URL
@@ -40,6 +40,13 @@ pipeline{
             steps{
                 git branch: env.gitlabBranch, url: env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
 
+                script {
+                    if (!fileExists(env.projectFile)) {
+                        error "The specified project file '${env.projectFile}' was not found in the root directory of the repository."
+                    }
+
+                    projectFile = env.projectFile
+                }
             }
 
             // steps {
@@ -47,13 +54,13 @@ pipeline{
 
             //     gitCleanCheckout(gitlabUrl: env.gitlabUrl, gitlabGroup: env.gitlabGroup, gitlabPproject: env.gitlabPproject, gitlabBranch: env.gitlabBranch)
                 
-            //     script {
-            //         if (!fileExists(env.projectFile)) {
-            //             error "The specified project file '${env.projectFile}' was not found in the root directory of the repository."
-            //         }
+                // script {
+                //     if (!fileExists(env.projectFile)) {
+                //         error "The specified project file '${env.projectFile}' was not found in the root directory of the repository."
+                //     }
 
-            //         projectFile = env.projectFile
-            //     }
+                //     projectFile = env.projectFile
+                // }
             // }
 
         }
@@ -108,8 +115,8 @@ pipeline{
                                 sh """
                                     export PATH="\$PATH:/tmp/.dotnet/tools"
 
-                                    dotnet sonarscanner --version || echo 'sonarscanner for .net non trovato'
-                                    dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.projectVersion='${APPLICATION_VERSION}' -d:sonar.cs.dotnet.solution='${projectFile}'
+                                    dotnet sonarscanner --version
+                                    dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' #-d:sonar.projectVersion='${APPLICATION_VERSION}'
                                     dotnet build '${projectFile}'
                                     dotnet sonarscanner end
                                 """
