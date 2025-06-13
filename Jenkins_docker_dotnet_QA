@@ -93,8 +93,8 @@ pipeline{
 
                 script {
                     echo "starting QA"
-                    sh "dotnet tool install --global dotnet-sonarscanner"
-                    sh "export PATH=\"\$PATH:/tmp/.dotnet/tools\""
+                    // sh "dotnet tool install --global dotnet-sonarscanner"
+                    // sh "export PATH=\"\$PATH:/tmp/.dotnet/tools\""
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
                             def QA_WD = pwd()
@@ -102,17 +102,17 @@ pipeline{
                             def scannerHome = tool 'sonarQubeScanner4'
                             def javaHome = tool 'JDK_21.0.3'
                             if (env.SONAR_IS_UP == 'true') {
-                                withEnv(["PATH+DOTNET=${env.DOTNET_CLI_HOME}/.dotnet/tools"]){
-                                    echo "=== Verifica SonarScanner for .NET ==="
-                                    sh "dotnet sonarscanner --version || echo 'SonarScanner non disponibile - verificare installazione'"
+                                echo "=== Verifica SonarScanner for .NET ==="
+                                // *** Combinare l'installazione e l'export PATH con i comandi sonarscanner ***
+                                sh """
+                                    dotnet tool install --global dotnet-sonarscanner
+                                    export PATH="\$PATH:/tmp/.dotnet/tools"
 
-                                    sh "dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.projectVersion='${APPLICATION_VERSION}' -d:sonar.cs.dotnet.solution='${projectFile}'"
-
-                                    sh "dotnet build '${projectFile}'"
-
-                                    sh "dotnet sonarscanner end"
-
-                                }
+                                    dotnet sonarscanner --version || echo 'sonarscanner for .net non trovato
+                                    dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.projectVersion='${APPLICATION_VERSION}' -d:sonar.cs.dotnet.solution='${projectFile}'
+                                    dotnet build '${projectFile}'
+                                    dotnet sonarscanner end
+                                """
                                         
                                 // -d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
                                 // -d:sonar.coverage.exclusions="**Test*.cs"
