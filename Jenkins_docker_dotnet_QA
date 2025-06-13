@@ -1,4 +1,6 @@
 //def AGENTS_LIST = (env.SLAVE1_DISABLED=='true'?'':'jenkins-slave-1 || ') + 'jenkins-slave-2 || jenkins-slave-3 || jenkins-slave-4 || jenkins-slave-5'
+import groovy.json.JsonSlurper
+
 
 def gitlabUrl = env.gitlabUrl
 def gitlabPproject = env.gitlabPproject
@@ -35,7 +37,7 @@ pipeline{
                 }
             }
 
-            git branch: env.gitlabBranch, url: env.gitlabUrl
+            git branch: env.gitlabBranch, url: env.gitlabUrl + "/" + env.gitlabGroup + "/" + env.gitlabPproject + ".git"
 
             // steps {
             //     echo "starting SCM checkout"
