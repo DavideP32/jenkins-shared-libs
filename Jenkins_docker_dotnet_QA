@@ -94,7 +94,7 @@ pipeline{
                 script {
                     echo "starting QA"
                     sh "dotnet tool install --global dotnet-sonarscanner"
-                    sh "export PATH=\"\$PATH:/root/.dotnet/tools\""
+                    sh "export PATH=\"\$PATH:/tmp/.dotnet/tools\""
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
                             def QA_WD = pwd()
