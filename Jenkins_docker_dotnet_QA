@@ -15,7 +15,8 @@ def SONAR_URL
 def QA_RESULT = [:] 
 
 
-@Library('shared-library')
+@Library('shared-library') _
+
 pipeline{
     agent { label AGENTS_LIST }   
     // environment {
