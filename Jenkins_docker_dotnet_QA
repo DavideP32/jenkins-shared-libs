@@ -12,7 +12,10 @@ def projectFile
 def APPLICATION_VERSION = '1.0'
 def GITLAB_REPORTS_PROJECT_ID = 70428016 //375
 def SONAR_URL
+def QA_RESULT = [:] 
 
+
+@Library('shared-library')
 pipeline{
     agent { label AGENTS_LIST }   
     // environment {
