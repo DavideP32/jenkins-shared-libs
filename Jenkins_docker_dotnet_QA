@@ -102,15 +102,17 @@ pipeline{
                             def scannerHome = tool 'sonarQubeScanner4'
                             def javaHome = tool 'JDK_21.0.3'
                             if (env.SONAR_IS_UP == 'true') {
+                                withEnv(["PATH+DOTNET=${env.DOTNET_CLI_HOME}/.dotnet/tools"]){
+                                    echo "=== Verifica SonarScanner for .NET ==="
+                                    sh "dotnet sonarscanner --version || echo 'SonarScanner non disponibile - verificare installazione'"
 
-                                echo "=== Verifica SonarScanner for .NET ==="
-                                sh "dotnet sonarscanner --version || echo 'SonarScanner non disponibile - verificare installazione'"
+                                    sh "dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.projectVersion='${APPLICATION_VERSION}' -d:sonar.cs.dotnet.solution='${projectFile}'"
 
-                                sh "dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.projectVersion='${APPLICATION_VERSION}' -d:sonar.cs.dotnet.solution='${projectFile}'"
+                                    sh "dotnet build '${projectFile}'"
 
-                                sh "dotnet build '${projectFile}'"
+                                    sh "dotnet sonarscanner end"
 
-                                sh "dotnet sonarscanner end"
+                                }
                                         
                                 // -d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
                                 // -d:sonar.coverage.exclusions="**Test*.cs"
