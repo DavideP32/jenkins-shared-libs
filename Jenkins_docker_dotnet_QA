@@ -9,7 +9,7 @@ def branch = env.gitlabBranch.replace('/', '-').replace('*', '')
 def AGENTS_LIST = (env.SLAVE1_DISABLED=='true'?'':'jenkins-slave-1')
 def dotNetVersion = env.dotNetVersion
 def projectFile
-def APPLICATION_VERSION = ''
+def APPLICATION_VERSION = '1.0'
 def GITLAB_REPORTS_PROJECT_ID = 70428016 //375
 def SONAR_URL
 
@@ -116,7 +116,7 @@ pipeline{
                                     export PATH="\$PATH:/tmp/.dotnet/tools"
 
                                     dotnet sonarscanner --version
-                                    dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' #-d:sonar.projectVersion='${APPLICATION_VERSION}'
+                                    dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' -d:sonar.projectVersion='${APPLICATION_VERSION}'
                                     dotnet build '${projectFile}'
                                     dotnet sonarscanner end
                                 """
