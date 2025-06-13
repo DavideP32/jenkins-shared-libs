@@ -117,7 +117,6 @@ pipeline{
                                 sh """
                                     dotnet tool install --global dotnet-sonarscanner
                                     export PATH="\$PATH:/tmp/.dotnet/tools"
-                                    dotnet sonarscanner --version
                                     dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' -d:sonar.projectVersion='${APPLICATION_VERSION}'
                                     dotnet build '${projectFile}'
                                     dotnet sonarscanner end
