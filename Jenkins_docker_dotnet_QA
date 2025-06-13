@@ -15,10 +15,9 @@ def SONAR_URL
 
 pipeline{
     agent { label AGENTS_LIST }   
-
-    environment {
-        GITLAB_TOKEN = credentials('gitlabAdminToken') //('gitlab-sistemisti-qg-token')
-    } 
+    // environment {
+    //     GITLAB_TOKEN = credentials('gitlabAdminToken') //('gitlab-sistemisti-qg-token')
+    // } 
 
     stages{
         stage('SCM Checkout') {
