@@ -29,8 +29,9 @@ pipeline{
                         -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
                         -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
                         -e DOTNET_CLI_HOME=/tmp
+                        --network=jenkins
                     """
-                    // --network= ......
+                    // 
 
                     reuseNode true
                     label AGENTS_LIST
@@ -79,6 +80,7 @@ pipeline{
                         -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
                         -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
                         -e DOTNET_CLI_HOME=/tmp
+                        --network=jenkins
                     """
                     reuseNode true
                     label AGENTS_LIST
@@ -91,6 +93,8 @@ pipeline{
 
                 script {
                     echo "starting QA"
+                    sh "dotnet tool install --global dotnet-sonarscanner"
+                    sh "export PATH=\"\$PATH:/root/.dotnet/tools\""
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
                             def QA_WD = pwd()
