@@ -11,6 +11,7 @@ def dotNetVersion = env.dotNetVersion
 def projectFile = ''
 def APPLICATION_VERSION = ''
 def GITLAB_REPORTS_PROJECT_ID = 70428016 //375
+def SONAR_URL
 
 pipeline{
     agent { label AGENTS_LIST }   
@@ -94,7 +95,7 @@ pipeline{
                     withSonarQubeEnv('SonarQubeNumera') {
                         script {
                             def QA_WD = pwd()
-                            def SONAR_URL = env.SONAR_HOST_URL
+                            SONAR_URL = env.SONAR_HOST_URL
                             def scannerHome = tool 'sonarQubeScanner4'
                             def javaHome = tool 'JDK_21.0.3'
                             if (env.SONAR_IS_UP == 'true') {
@@ -116,7 +117,6 @@ pipeline{
                     }
                 }
 
-                def SONAR_URL = env.SONAR_HOST_URL
 
                 script{
                     sleep(30) 
