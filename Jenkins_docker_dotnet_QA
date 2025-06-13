@@ -1,0 +1,197 @@
+//def AGENTS_LIST = (env.SLAVE1_DISABLED=='true'?'':'jenkins-slave-1 || ') + 'jenkins-slave-2 || jenkins-slave-3 || jenkins-slave-4 || jenkins-slave-5'
+
+def gitlabUrl = env.gitlabUrl
+def gitlabPproject = env.gitlabPproject
+def gitlabGroup = env.gitlabGroup
+def branch = env.gitlabBranch.replace('/', '-').replace('*', '')
+def AGENTS_LIST = (env.SLAVE1_DISABLED=='true'?'':'jenkins-slave-1')
+def dotNetVersion = env.dotNetVersion
+def projectFile = ''
+def APPLICATION_VERSION = ''
+def GITLAB_REPORTS_PROJECT_ID = 70428016 //375
+
+pipeline{
+    agent { label AGENTS_LIST }   
+
+    environment {
+        GITLAB_TOKEN = credentials('gitlabAdminToken') //('gitlab-sistemisti-qg-token')
+    } 
+
+    stages{
+        stage('SCM Checkout') {
+            agent{
+                docker {
+                    image "mcr.microsoft.com/dotnet/sdk:${dotNetVersion}"
+                    args """
+                        -v /opt/java:/opt/java:rw,z \
+                        -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
+                        -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
+                        -e DOTNET_CLI_HOME=/tmp
+                    """
+                    // --network= ......
+
+                    reuseNode true
+                    label AGENTS_LIST
+                }
+            }
+
+            git branch: env.gitlabBranch, url: env.gitlabUrl
+
+            // steps {
+            //     echo "starting SCM checkout"
+
+            //     gitCleanCheckout(gitlabUrl: env.gitlabUrl, gitlabGroup: env.gitlabGroup, gitlabPproject: env.gitlabPproject, gitlabBranch: env.gitlabBranch)
+                
+            //     script {
+            //         if (!fileExists(env.projectFile)) {
+            //             error "The specified project file '${env.projectFile}' was not found in the root directory of the repository."
+            //         }
+
+            //         projectFile = env.projectFile
+            //     }
+            // }
+
+        }
+
+        
+        // stage('Version Check'){
+
+        //     agent any
+
+        //     steps{
+        //         script {
+        //             APPLICATION_VERSION = versionCheck GITLAB_REPORTS_PROJECT_ID: GITLAB_REPORTS_PROJECT_ID
+        //         }
+        //     }
+        // }
+
+        stage('QA'){
+
+            agent{
+                docker {
+                    image "mcr.microsoft.com/dotnet/sdk:${dotNetVersion}"
+                    args """
+                        -v /opt/java:/opt/java:rw,z \
+                        -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
+                        -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
+                        -e DOTNET_CLI_HOME=/tmp
+                    """
+                    reuseNode true
+                    label AGENTS_LIST
+                }
+            }
+
+            def QA_WD = pwd()
+
+            script {
+                echo "starting QA"
+                withSonarQubeEnv('SonarQubeNumera') {
+                    script {
+                        
+                        def SONAR_URL = env.SONAR_HOST_URL
+                        def scannerHome = tool 'sonarQubeScanner4'
+                        def javaHome = tool 'JDK_21.0.3'
+                        if (env.SONAR_IS_UP == 'true') {
+
+                            echo "=== Verifica SonarScanner for .NET ==="
+                            sh "dotnet sonarscanner --version || echo 'SonarScanner non disponibile - verificare installazione'"
+
+                            sh "dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.projectVersion='${APPLICATION_VERSION}' -d:sonar.cs.dotnet.solution='${projectFile}'"
+
+                            sh "dotnet build '${projectFile}'"
+
+                            sh "dotnet sonarscanner end"
+                                    
+                            // -d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
+                            // -d:sonar.coverage.exclusions="**Test*.cs"
+                                
+                        }
+                    }
+                }
+            }
+
+            def SONAR_URL = env.SONAR_HOST_URL
+
+            script{
+                sleep(30) 
+                timeout(time: 360, unit: 'SECONDS') {
+                    if (env.SONAR_IS_UP == 'true') {
+                        def qg = waitForQualityGate() 
+                        // def branch = env.gitlabBranch
+                        // branch = branch.replace('/', '-')
+                        // branch = branch.replace('*', '')
+                        
+                        withCredentials([usernameColonPassword(credentialsId: 'sonarqube-api-token', variable: 'USERPASS')]) {
+                            //sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Template-Sonarqube_" + gitlabGroup + "&projectKey=" + gitlabPproject + "-" + branch + "'"
+                            sh "curl -X POST -u $USERPASS -i '" + SONAR_URL + "/api/permissions/apply_template?templateName=Default%20template&projectKey=" + gitlabPproject + "-" + branch + "'"
+                            echo 'Configurato permission template per il project sonar'
+
+
+                            //estrazione coverage da sonar
+                            sh "curl --fail -s -L -X GET -u $USERPASS '$SONAR_URL/api/measures/component?component=${gitlabPproject}-${branch}&metricKeys=coverage,sqale_debt_ratio' -o sonar_measures.json"
+                            def coverageFile = readFile "sonar_measures.json"
+                            def coverageJson = new JsonSlurper().parseText(coverageFile)
+                            Float coverage = 0
+                            Float techDeb = 0
+                            Float securityRating = 0
+
+                            coverageJson.component.measures.each {
+                                if (it.metric == "coverage" && it.value) coverage = it.value.toFloat()
+                                if (it.metric == "sqale_debt_ratio" && it.value) techDeb = it.value.toFloat()
+                                if (it.metric == "security_rating" && it.value) securityRating = it.value.toFloat()
+                            }
+
+                            //aggiungo l'url della dashboard sonar alla mappa
+                            QA_RESULT.put("sonarqube.report-url", "$SONAR_URL/dashboard?id=" + gitlabPproject + "-" + branch)
+                            //aggiungo l'esito dell'analisi Sonar
+                            //rendo sonarQUBE non bloccante, il primo KO diventa OK
+                            QA_RESULT.put("sonarqube.esito", env.SONAR_IS_BLOCKING != 'false' && qg.status != 'OK' && qg.status != 'WARN' ? "KO" : "OK")
+                            //aggiungo la descrizione per sonar
+                            QA_RESULT.put("sonarqube.description", "Coverage del progetto: " + coverage + "\ndebito tecnico: " + techDeb + "\nsecurity rating: " + securityRating)
+                        }
+
+                        if (qg.status != 'OK' && qg.status != 'WARN') {
+                            echo("Pipeline in errore a causa del Quality Gate impostato su Sonar. Status: ${qg.status}. Controllare la link $SONAR_URL/dashboard?id=" + gitlabPproject + "-" + branch)
+                            echo(QA_RESULT["sonarqube.description"])
+                            currentBuild.result = 'UNSTABLE'
+                        }
+                    } else {
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+
+                        echo 'ATTENZIONE VERIFICA QUALITY GATE SONAR NON ATTIVO Variabile ambiente env.SONAR_IS_UP ' + env.SONAR_IS_UP
+
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                        echo 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+                    }
+                }
+            }
+
+        }
+
+        stage('Push QG Result'){
+
+            agent any
+        
+            steps {
+                echo "push QG"
+
+                script {
+                    dir("tmp") {
+                        repoCheckout checkoutUrl: 'https://gitlab.com/Dev1833023/pipeline-build.git' //"http://172.16.63.237/Devops/pipeline-build.git"
+                    }
+
+                    pushQG(
+                        QA_RESULT: QA_RESULT,
+                        APPLICATION_VERSION: APPLICATION_VERSION,
+                        GITLAB_REPORTS_PROJECT_ID: GITLAB_REPORTS_PROJECT_ID
+                    )
+                }
+            }
+        }
+    }
+}
