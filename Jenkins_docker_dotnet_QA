@@ -25,11 +25,11 @@ pipeline{
                 docker {
                     image "mcr.microsoft.com/dotnet/sdk:${dotNetVersion}"
                     args """
+                        --network=host \
                         -v /opt/java:/opt/java:rw,z \
                         -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
                         -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
                         -e DOTNET_CLI_HOME=/tmp
-                        --network=jenkins
                     """
                     // 
 
@@ -76,11 +76,11 @@ pipeline{
                 docker {
                     image "mcr.microsoft.com/dotnet/sdk:${dotNetVersion}"
                     args """
+                        --network=host \
                         -v /opt/java:/opt/java:rw,z \
                         -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
                         -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
                         -e DOTNET_CLI_HOME=/tmp
-                        --network=jenkins
                     """
                     reuseNode true
                     label AGENTS_LIST
