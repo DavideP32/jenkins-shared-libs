@@ -108,7 +108,7 @@ pipeline{
                                 sh """
                                     export PATH="\$PATH:/tmp/.dotnet/tools"
 
-                                    dotnet sonarscanner --version || echo 'sonarscanner for .net non trovato
+                                    dotnet sonarscanner --version || echo 'sonarscanner for .net non trovato'
                                     dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.projectVersion='${APPLICATION_VERSION}' -d:sonar.cs.dotnet.solution='${projectFile}'
                                     dotnet build '${projectFile}'
                                     dotnet sonarscanner end
