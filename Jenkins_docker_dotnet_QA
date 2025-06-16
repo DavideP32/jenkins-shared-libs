@@ -13,6 +13,7 @@ def APPLICATION_VERSION = '1.0'
 def GITLAB_REPORTS_PROJECT_ID = 70428016 //375
 def SONAR_URL
 def QA_RESULT = [:] 
+def SONAR_MSBUILD_DLL_PATH
 
 
 @Library('shared-library') _
@@ -20,7 +21,7 @@ def QA_RESULT = [:]
 pipeline{
     agent { label AGENTS_LIST }   
     environment {
-        GITLAB_TOKEN = credentials(gitlab-sistemisti-qg-token) //'gitlabAdminToken') //('gitlab-sistemisti-qg-token')
+        GITLAB_TOKEN = credentials('gitlab-sistemisti-qg-token') //'gitlabAdminToken') //('gitlab-sistemisti-qg-token')
     } 
 
     stages{
@@ -32,6 +33,7 @@ pipeline{
                         --network=host \
                         -v /opt/java:/opt/java:rw,z \
                         -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
+                        -v /opt/sonar-scanner-msbuild:/opt/sonar-scanner-msbuild \
                         -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
                         -e DOTNET_CLI_HOME=/tmp
                     """
@@ -90,6 +92,7 @@ pipeline{
                         --network=host \
                         -v /opt/java:/opt/java:rw,z \
                         -v /opt/sonar-scanner:/opt/sonar-scanner:rw,z \
+                        -v /opt/sonar-scanner-msbuild:/opt/sonar-scanner-msbuild \
                         -v /home/tomcat/tools:/home/tomcat/tools:rw,z \
                         -e DOTNET_CLI_HOME=/tmp
                     """
@@ -112,16 +115,15 @@ pipeline{
                             SONAR_URL = env.SONAR_HOST_URL
                             def scannerHome = tool 'sonarQubeScanner4'
                             def javaHome = tool 'JDK_21.0.3'
+                            SONAR_MSBUILD_DLL_PATH = "/opt/sonar-scanner-msbuild/SonarScanner.MSBuild.dll"
                             if (env.SONAR_IS_UP == 'true') {
                                 echo "=== Verifica SonarScanner for .NET ==="
 
                               //  If you already have a compatible java version installed, please add either the parameter "/d:sonar.scanner.skipJreProvisioning=true" or "/d:sonar.scanner.javaExePath=<PATH>".
                                 sh """
-                                    dotnet tool install --global dotnet-sonarscanner
-                                    export PATH="\$PATH:/tmp/.dotnet/tools"
-                                    dotnet sonarscanner begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' -d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml -v:'${APPLICATION_VERSION}'
+                                    dotnet ${SONAR_MSBUILD_DLL_PATH} begin -k:'${gitlabPproject}-${branch}' -d:sonar.host.url='${SONAR_URL}' -d:sonar.cs.dotnet.solution='${projectFile}' -d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml -v:'${APPLICATION_VERSION}'
                                     dotnet build '${projectFile}'
-                                    dotnet sonarscanner end
+                                    dotnet ${SONAR_MSBUILD_DLL_PATH} end
                                 """
 
                                         
